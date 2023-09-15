@@ -92,6 +92,8 @@ const startofPhaseRegex =
     /^At\Wthe\Wstart\Wof\Wthis\Wphase,\WI\Wintend\Wto\Wdo\:\W\((.*)\)$/;
 const messageResponseRegex =
     /^After\WI\Wgot\Wthe\Wmessage\Wfrom\W[A-Z]+,\WI\Wintend\Wto\Wdo:\W\((.*)\)$/;
+const dipccRegex = /^process dipcc game.+/;
+const intentRecordRegex = /^A record of intents in.*$/;
 
 /* Order management in game page.
  * When editing orders locally, we have to compare it to server orders
@@ -2117,8 +2119,14 @@ export class ContentGame extends React.Component {
             const startOfPhaseMatch = log.message.match(startofPhaseRegex);
             const messageResponseMatch =
                 log.message.match(messageResponseRegex);
+            const dipccMatch = log.message.match(dipccRegex);
+            const intentRecordMatch = log.message.match(intentRecordRegex);
 
-            if (log.phase !== prevPhase) {
+            if (
+                log.phase !== prevPhase &&
+                log.phase.slice(-1) !== "A" &&
+                log.phase.slice(-1) !== "R"
+            ) {
                 curPhase = log.phase;
                 renderedLogs.push(
                     <MessageSeparator>{curPhase}</MessageSeparator>
@@ -2131,6 +2139,7 @@ export class ContentGame extends React.Component {
                 }
             }
 
+            // filter out cases where cicero intentions don't change
             if (
                 messageResponseMatch &&
                 messageResponseMatch[1] === ciceroIntentions
@@ -2138,10 +2147,16 @@ export class ContentGame extends React.Component {
                 return;
             }
 
+            // filter out internal response, expect power to do, and dipcc logs
             else if (
+                log.phase.slice(-1) !== "A" &&
+                log.phase.slice(-1) !== "R" &&
                 !internalResponseMatch &&
-                !expectPowerToDoMatch
+                !expectPowerToDoMatch &&
+                !dipccMatch //&&
+                //!intentRecordMatch
             ) {
+                // update cicero intentions
                 if (messageResponseMatch) {
                     ciceroIntentions = messageResponseMatch[1];
                 }
