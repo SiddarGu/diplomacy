@@ -2015,6 +2015,12 @@ export class ContentGame extends React.Component {
     }
 
     renderLogs(engine, role) {
+        const { initialEngine, pastPhases, phaseIndex } =
+            this.__get_engine_to_display(engine);
+
+        console.log('past phase: ', pastPhases[phaseIndex])
+        console.log('current phase: ', engine.phase)
+
         const curController = engine.powers[role].getController();
         const powerLogs = engine.getLogsForPower(role, true);
         let renderedLogs = [];
@@ -2033,6 +2039,10 @@ export class ContentGame extends React.Component {
                 log.message.match(messageResponseRegex);
             const dipccMatch = log.message.match(dipccRegex);
             const intentRecordMatch = log.message.match(intentRecordRegex);
+
+            if (pastPhases[phaseIndex] !== log.phase) {
+                return;
+            }
 
             if (
                 log.phase !== prevPhase &&
