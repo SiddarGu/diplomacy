@@ -2444,17 +2444,7 @@ export class ContentGame extends React.Component {
             this.__get_engine_to_display(engine);
         let phasePanel;
         if (pastPhases[phaseIndex] === engine.phase) {
-            if (hasTabCurrentPhase) {
-                phasePanel = this.renderTabCurrentPhase(
-                    true,
-                    engine,
-                    currentPowerName,
-                    orderBuildingType,
-                    this.state.orderBuildingPath,
-                    currentPowerName,
-                    currentTabOrderCreation
-                );
-            } else if (hasTabPhaseHistory) {
+            if (hasTabPhaseHistory) {
                 phasePanel = this.renderTabResults(true, engine);
             }
         } else {
@@ -2476,10 +2466,8 @@ export class ContentGame extends React.Component {
                 {phasePanel}
                 <Row>
                     {this.renderTabChat(true, engine, currentPowerName)}
-                    {this.renderPowerInfo(engine)}
+                    {this.renderLogs(engine, currentPowerName)}
                 </Row>
-                {localStorage.getItem("username") === "admin" &&
-                    this.renderLogs(engine, currentPowerName)}
             </main>
         );
     }

@@ -137,17 +137,10 @@ export class ContentGames extends React.Component {
                             username={page.channel.username} navigation={navigation}/>
                 <Tabs menu={['find', 'my-games']} titles={['Find', 'My Games']}
                       onChange={this.changeTab} active={tab}>
-                    {tab === 'find' ? (
-                        <Tab id="tab-games-find" display={true}>
-                            <FindForm onSubmit={this.onFind}/>
-                            <Table className={"table table-striped"} caption={"Games"} columns={TABLE_LOCAL_GAMES}
-                                   data={gamesFound} wrapper={this.wrapGameData}/>
-                        </Tab>
-                    ) : ''}
                     {tab === 'my-games' ? (
                         <Tab id={'tab-my-games'} display={true}>
                             <Table className={"table table-striped"} caption={"My games"} columns={TABLE_LOCAL_GAMES}
-                                   data={myGames} wrapper={this.wrapGameData}/>
+                                   data={gamesFound} wrapper={this.wrapGameData}/>
                         </Tab>
                     ) : ''}
                 </Tabs>
@@ -157,6 +150,7 @@ export class ContentGames extends React.Component {
 
     componentDidMount() {
         window.scrollTo(0, 0);
+        this.onFind({});
     }
 }
 
