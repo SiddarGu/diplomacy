@@ -613,6 +613,8 @@ export class Game {
             else if (this.message_history.contains(this.phase))
                 messagesToShow = this.message_history.get(this.phase);
         }
+        if (!messagesToShow || !messagesToShow.length)
+            return messageChannels;
         for (let messages of messagesToShow) {
             for (let message of messages.values()) {
                 let protagonist = null;
