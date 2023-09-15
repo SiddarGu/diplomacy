@@ -1315,49 +1315,9 @@ export class ContentGame extends React.Component {
         return render;
     }
 
-    filterMessages(engine, messageChannels) {
-        /* 
-            Hide messages that are not annotated.
-        */
-        if (
-            engine.role === "omniscient_type" ||
-            engine.role === "observer_type" ||
-            engine.role === "master_type"
-        )
-            return messageChannels;
-
-        let filteredMessageChannels = {};
-        const controlledPower = this.getCurrentPowerName();
-
-        for (const [powerName, messages] of Object.entries(messageChannels)) {
-            let filteredMessages = [];
-            let showMessage = true;
-
-            for (let idx in messages) {
-                const message = messages[idx];
-                if (message.sender === controlledPower || showMessage) {
-                    filteredMessages.push(message);
-                }
-                if (
-                    message.sender !== controlledPower &&
-                    !this.state.annotatedMessages.hasOwnProperty(
-                        message.time_sent
-                    )
-                ) {
-                    showMessage = false;
-                }
-            }
-            filteredMessageChannels[powerName] = filteredMessages;
-        }
-
-        return filteredMessageChannels;
-    }
-
     renderPastMessages(engine, role) {
-        const messageChannels = this.filterMessages(
-            engine,
-            engine.getMessageChannels(role, true)
-        );
+        const messageChannels = engine.getMessageChannels(role, true);
+        
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
             if (powerName !== role) tabNames.push(powerName);
@@ -1378,11 +1338,6 @@ export class ContentGame extends React.Component {
                     }}
                     key={protagonist}
                     name={protagonist}
-                    unreadCnt={this.countUnreadMessages(
-                        engine,
-                        role,
-                        protagonist
-                    )}
                 >
                     <Avatar
                         src={POWER_ICONS[protagonist]}
@@ -1451,46 +1406,8 @@ export class ContentGame extends React.Component {
         );
     }
 
-    countUnreadMessages(engine, role, protagnist) {
-        let messageChannels = engine.getMessageChannels(role, true);
-        if (
-            engine.role === "omniscient_type" ||
-            engine.role === "observer_type" ||
-            engine.role === "master_type"
-        )
-            return 0;
-
-        const controlledPower = this.getCurrentPowerName();
-        let count = 0;
-
-        for (const [_, messages] of Object.entries(messageChannels)) {
-            for (let idx in messages) {
-                const message = messages[idx];
-
-                if (
-                    message.sender === protagnist &&
-                    message.recipient === controlledPower &&
-                    !message.recipient_annotation &&
-                    !this.state.annotatedMessages.hasOwnProperty(
-                        message.time_sent
-                    )
-                ) {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
-    truncate(str) {
-        return str.length > 15 ? str.substring(0, 12) + "..." : str;
-    }
-
     renderCurrentMessages(engine, role) {
-        const messageChannels = this.filterMessages(
-            engine,
-            engine.getMessageChannels(role, true)
-        );
+        const messageChannels = engine.getMessageChannels(role, true);
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
             if (powerName !== role) tabNames.push(powerName);
@@ -1519,11 +1436,6 @@ export class ContentGame extends React.Component {
                     }}
                     key={protagonist}
                     name={protagonist}
-                    unreadCnt={this.countUnreadMessages(
-                        engine,
-                        role,
-                        protagonist
-                    )}
                 >
                     <Avatar
                         src={POWER_ICONS[protagonist]}
