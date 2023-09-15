@@ -1965,7 +1965,6 @@ export class ContentGame extends React.Component {
             this.state.power ||
             (engine.getControllablePowers().length &&
                 engine.getControllablePowers()[0]);
-        console.log("currentPowerName", currentPowerName);
 
         return engine.role === "omniscient_type" ||
             engine.role === "observer_type" ||
@@ -2017,9 +2016,6 @@ export class ContentGame extends React.Component {
     renderLogs(engine, role) {
         const { initialEngine, pastPhases, phaseIndex } =
             this.__get_engine_to_display(engine);
-
-        console.log('past phase: ', pastPhases[phaseIndex])
-        console.log('current phase: ', engine.phase)
 
         const curController = engine.powers[role].getController();
         const powerLogs = engine.getLogsForPower(role, true);
@@ -2074,7 +2070,7 @@ export class ContentGame extends React.Component {
                 log.phase.slice(-1) !== "A" &&
                 log.phase.slice(-1) !== "R" &&
                 !internalResponseMatch &&
-                !expectPowerToDoMatch &&
+                //!expectPowerToDoMatch &&
                 !dipccMatch //&&
                 //!intentRecordMatch
             ) {

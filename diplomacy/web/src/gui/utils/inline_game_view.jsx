@@ -87,30 +87,6 @@ export class InlineGameView {
 
     getActionButtons() {
         const buttons = [];
-        // Button to add/remove game from "My games" list.
-        if (this.page.hasMyGame(this.game.game_id)) {
-            if (!this.game.client) {
-                // Game in My Games and not joined. We can remove it.
-                buttons.push(<Button key={`my-game-remove`} title={'Remove from My Games'}
-                                     small={true} large={true}
-                                     onClick={() => this.page.removeFromMyGames(this.game.game_id)}/>);
-            }
-        } else {
-            // Game not in My Games, we can add it.
-            buttons.push(<Button key={`my-game-add`} title={'Add to My Games'}
-                                 small={true} large={true}
-                                 onClick={() => this.page.addToMyGames(this.game)}/>);
-        }
-        // Button to delete game.
-        if ([STRINGS.MASTER_TYPE, STRINGS.OMNISCIENT_TYPE].includes(this.game.observer_level)) {
-            buttons.push(
-                <DeleteButton key={`game-delete-${this.game.game_id}`}
-                              title={'Delete this game'}
-                              confirmTitle={'Click again to confirm deletion'}
-                              waitingTitle={'Deleting ...'}
-                              onClick={() => this.page.removeGame(this.game.game_id)}/>
-            );
-        }
         return buttons;
     }
 

@@ -29,14 +29,7 @@ import {GameCreationWizard} from "../wizards/gameCreation/gameCreationWizard";
 
 const TABLE_LOCAL_GAMES = {
     game_id: ['Game ID', 0],
-    deadline: ['Deadline', 1],
-    rights: ['Rights', 2],
-    rules: ['Rules', 3],
-    players: ['Players/Expected', 4],
-    status: ['Status', 5],
-    phase: ['Phase', 6],
-    join: ['Join', 7],
-    actions: ['Actions', 8],
+    join: ['Join', 1],
 };
 
 export class ContentGames extends React.Component {
