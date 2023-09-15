@@ -126,9 +126,9 @@ export class ContentGames extends React.Component {
                 <Helmet>
                     <title>{title} | Diplomacy</title>
                 </Helmet>
-                <Navigation title={title} afterTitle={this.gameCreationButton()}
+                <Navigation title={title}
                             username={page.channel.username} navigation={navigation}/>
-                <Tabs menu={['find', 'my-games']} titles={['Find', 'My Games']}
+                <Tabs menu={['my-games']} titles={[ 'My Games']}
                       onChange={this.changeTab} active={tab}>
                     {tab === 'my-games' ? (
                         <Tab id={'tab-my-games'} display={true}>
