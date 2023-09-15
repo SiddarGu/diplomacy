@@ -86,6 +86,13 @@ const POWER_ICONS = {
 
 const HotKey = require("react-shortcut");
 
+const internalResponseRegex = /^My\W\(internal\)\Wresponse\Wis\: .*/;
+const expectPowerToDoRegex = /^I\Wexpect\W[A-Z]+\Wto\Wdo:\W.*/;
+const startofPhaseRegex =
+    /^At\Wthe\Wstart\Wof\Wthis\Wphase,\WI\Wintend\Wto\Wdo\:\W\((.*)\)$/;
+const messageResponseRegex =
+    /^After\WI\Wgot\Wthe\Wmessage\Wfrom\W[A-Z]+,\WI\Wintend\Wto\Wdo:\W\((.*)\)$/;
+
 /* Order management in game page.
  * When editing orders locally, we have to compare it to server orders
  * to determine when we need to update orders on server side. There are
@@ -2095,12 +2102,22 @@ export class ContentGame extends React.Component {
 
     renderLogs(engine, role) {
         const curController = engine.powers[role].getController();
-
         const powerLogs = engine.getLogsForPower(role, true);
         let renderedLogs = [];
         let curPhase = "";
         let prevPhase = "";
+        let ciceroIntentions = "";
+
         powerLogs.forEach((log) => {
+            const internalResponseMatch = log.message.match(
+                internalResponseRegex
+            );
+            const expectPowerToDoMatch =
+                log.message.match(expectPowerToDoRegex);
+            const startOfPhaseMatch = log.message.match(startofPhaseRegex);
+            const messageResponseMatch =
+                log.message.match(messageResponseRegex);
+
             if (log.phase !== prevPhase) {
                 curPhase = log.phase;
                 renderedLogs.push(
@@ -2108,20 +2125,40 @@ export class ContentGame extends React.Component {
                 );
 
                 prevPhase = curPhase;
+
+                if (startOfPhaseMatch) {
+                    ciceroIntentions = startOfPhaseMatch[1];
+                }
             }
 
-            renderedLogs.push(
-                // eslint-disable-next-line react/jsx-key
-                <ChatMessage
-                    model={{
-                        message: log.message,
-                        sent: log.sent_time,
-                        sender: role,
-                        direction: "outgoing",
-                        position: "single",
-                    }}
-                ></ChatMessage>
-            );
+            if (
+                messageResponseMatch &&
+                messageResponseMatch[1] === ciceroIntentions
+            ) {
+                return;
+            }
+
+            else if (
+                !internalResponseMatch &&
+                !expectPowerToDoMatch
+            ) {
+                if (messageResponseMatch) {
+                    ciceroIntentions = messageResponseMatch[1];
+                }
+
+                renderedLogs.push(
+                    // eslint-disable-next-line react/jsx-key
+                    <ChatMessage
+                        model={{
+                            message: log.message,
+                            sent: log.sent_time,
+                            sender: role,
+                            direction: "outgoing",
+                            position: "single",
+                        }}
+                    ></ChatMessage>
+                );
+            }
         });
 
         return (
