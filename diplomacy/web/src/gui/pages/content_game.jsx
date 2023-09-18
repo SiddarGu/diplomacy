@@ -1317,7 +1317,7 @@ export class ContentGame extends React.Component {
 
     renderPastMessages(engine, role) {
         const messageChannels = engine.getMessageChannels(role, false);
-        
+
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
             if (powerName !== role) tabNames.push(powerName);
@@ -1813,6 +1813,10 @@ export class ContentGame extends React.Component {
     renderTabResults(toDisplay, initialEngine) {
         const { engine, pastPhases, phaseIndex } =
             this.__get_engine_to_display(initialEngine);
+        const [initialPlayerOrders, messageOrders] =
+            initialEngine.getMessageOrder();
+        const initialPlayerOrdersThisPhase =
+            initialPlayerOrders[pastPhases[phaseIndex]];
         let orders = {};
         let orderResult = null;
         if (engine.order_history.contains(engine.phase))
@@ -1823,8 +1827,42 @@ export class ContentGame extends React.Component {
         for (let powerOrders of Object.values(orders)) {
             if (powerOrders) countOrders += powerOrders.length;
         }
+
+        // sort orders for each power
+        for (let power in orders) {
+            orders[power].sort();
+        }
+
         const powerNames = Object.keys(orders);
         powerNames.sort();
+        let startIntentions = {};
+        const orderLogs = engine.getOrderLogs();
+
+        for (const power_idx in powerNames) {
+            const power = powerNames[power_idx];
+            const powerLogs = initialEngine.getLogsForPower(power, true);
+            powerLogs.forEach((log) => {
+                const startOfPhaseMatch = log.message.match(startofPhaseRegex);
+
+                if (pastPhases[phaseIndex] !== log.phase) {
+                    return;
+                }
+
+                if (
+                    log.phase.slice(-1) !== "A" &&
+                    log.phase.slice(-1) !== "R"
+                ) {
+                    if (startOfPhaseMatch) {
+                        const startOrders = startOfPhaseMatch[1]
+                            .split(", ")
+                            .map((order) => {
+                                return order.replace(/['"]+/g, "");
+                            }).sort();
+                        startIntentions[power] = startOrders;
+                    }
+                }
+            });
+        }
 
         const getOrderResult = (order) => {
             if (orderResult) {
@@ -1860,10 +1898,32 @@ export class ContentGame extends React.Component {
                             ""
                         ) : (
                             <div key={powerName} className={"row"}>
-                                <div className={"past-power-name col-sm-2"}>
-                                    {powerName}
+                                {initialPlayerOrdersThisPhase.hasOwnProperty(
+                                    powerName
+                                ) ? (
+                                    <div className={"past-power-name col-sm-2"}>
+                                        {powerName} (human)
+                                    </div>
+                                ) : (
+                                    <div className={"past-power-name col-sm-2"}>
+                                        {powerName}
+                                    </div>
+                                )}
+                                <div className={"past-power-name col-sm-4"}>
+                                    {startIntentions[powerName] &&
+                                        startIntentions[powerName].map(
+                                            (order, index) => (
+                                                <div key={index}>{order}</div>
+                                            )
+                                        )}
+                                    {initialPlayerOrdersThisPhase.hasOwnProperty(
+                                        powerName
+                                    ) &&
+                                        initialPlayerOrdersThisPhase[
+                                            powerName
+                                        ].map((order) => <div>{order}</div>)}
                                 </div>
-                                <div className={"past-power-orders col-sm-10"}>
+                                <div className={"past-power-orders col-sm-4"}>
                                     {orders[powerName].map((order, index) => (
                                         <div key={index}>
                                             {order}
@@ -2065,14 +2125,12 @@ export class ContentGame extends React.Component {
                 return;
             }
 
-            // filter out internal response, expect power to do, and dipcc logs
+            // filter out internal response and dipcc logs
             else if (
                 log.phase.slice(-1) !== "A" &&
                 log.phase.slice(-1) !== "R" &&
                 !internalResponseMatch &&
-                //!expectPowerToDoMatch &&
                 !dipccMatch //&&
-                //!intentRecordMatch
             ) {
                 // update cicero intentions
                 if (messageResponseMatch) {
@@ -2089,7 +2147,9 @@ export class ContentGame extends React.Component {
                             direction: "outgoing",
                             position: "single",
                         }}
-                    ></ChatMessage>
+                    >
+                        <ChatMessage.Header sentTime={role + " cicero log"} />
+                    </ChatMessage>
                 );
             }
         });

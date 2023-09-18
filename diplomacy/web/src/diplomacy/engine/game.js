@@ -14,27 +14,25 @@
 //  You should have received a copy of the GNU Affero General Public License along
 //  with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ==============================================================================
-import {UTILS} from "../utils/utils";
-import {STRINGS} from "../utils/strings";
-import {SortedDict} from "../utils/sorted_dict";
-import {Power} from "./power";
-import {Message} from "./message";
-import {Order} from "../../gui/utils/order";
+import { UTILS } from "../utils/utils";
+import { STRINGS } from "../utils/strings";
+import { SortedDict } from "../utils/sorted_dict";
+import { Power } from "./power";
+import { Message } from "./message";
+import { Order } from "../../gui/utils/order";
 
 export function comparablePhase(shortPhaseName) {
     /** Return a unique integer corresponding to given short phase name, so that
      * phases can be compared using such integers.
      * **/
     // Phase 'FORMING' is assumed to be the smallest phase.
-    if (shortPhaseName === 'FORMING')
-        return 0;
+    if (shortPhaseName === "FORMING") return 0;
     // Phase 'COMPLETED' is assumed to be the greatest phase.
-    if (shortPhaseName === 'COMPLETED')
-        return Number.MAX_SAFE_INTEGER;
+    if (shortPhaseName === "COMPLETED") return Number.MAX_SAFE_INTEGER;
     if (shortPhaseName.length !== 6)
         throw new Error(`Invalid short phase name: ${shortPhaseName}`);
-    const seasonOrder = {S: 0, F: 1, W: 2};
-    const stepOrder = {M: 0, R: 1, A: 2};
+    const seasonOrder = { S: 0, F: 1, W: 2 };
+    const stepOrder = { M: 0, R: 1, A: 2 };
     const phaseSeason = shortPhaseName[0];
     const phaseYear = parseInt(shortPhaseName.substring(1, 5), 10);
     const phaseStep = shortPhaseName[5];
@@ -44,7 +42,9 @@ export function comparablePhase(shortPhaseName) {
         throw new Error(`Unable to parse phase season from ${shortPhaseName}`);
     if (!stepOrder.hasOwnProperty(phaseStep))
         throw new Error(`Unable to parse phase step from ${shortPhaseName}`);
-    return (phaseYear * 100) + (seasonOrder[phaseSeason] * 10) + stepOrder[phaseStep];
+    return (
+        phaseYear * 100 + seasonOrder[phaseSeason] * 10 + stepOrder[phaseStep]
+    );
 }
 
 export class Game {
@@ -55,49 +55,102 @@ export class Game {
         // These fields must not be null.
 
         const nonNullFields = [
-            'game_id', 'map_name', 'messages', 'role', 'rules', 'status', 'timestamp_created', 'deadline',
-            'message_history', 'order_history', 'state_history', 'logs', 'log_history', 'order_suggestions'
+            "game_id",
+            "map_name",
+            "messages",
+            "role",
+            "rules",
+            "status",
+            "timestamp_created",
+            "deadline",
+            "message_history",
+            "order_history",
+            "state_history",
+            "logs",
+            "log_history",
+            "order_suggestions",
         ];
         // These fields may be null.
-        const nullFields = ['n_controls', 'registration_password'];
+        const nullFields = ["n_controls", "registration_password"];
         // All fields are required.
         for (let field of nonNullFields)
             if (!gameData.hasOwnProperty(field) || gameData[field] == null)
-                throw new Error('Game: given state must have field `' + field + '` with non-null value.');
+                throw new Error(
+                    "Game: given state must have field `" +
+                        field +
+                        "` with non-null value."
+                );
         for (let field of nullFields)
             if (!gameData.hasOwnProperty(field))
-                throw new Error('Game: given state must have field `' + field + '`.');
+                throw new Error(
+                    "Game: given state must have field `" + field + "`."
+                );
 
         this.game_id = gameData.game_id;
         this.map_name = gameData.map_name;
-        this.messages = new SortedDict(gameData instanceof Game ? null : gameData.messages, parseInt);
-        this.logs = new SortedDict(gameData instanceof Game ? null : gameData.logs, parseInt);
+        this.messages = new SortedDict(
+            gameData instanceof Game ? null : gameData.messages,
+            parseInt
+        );
+        this.logs = new SortedDict(
+            gameData instanceof Game ? null : gameData.logs,
+            parseInt
+        );
         this.annotated_messages = gameData.annotated_messages || {};
-        this.hasInitialOrders = gameData.has_initial_orders ? gameData.has_initial_orders : {};
+        this.order_log_history = gameData.order_log_history || {};
+        this.hasInitialOrders = gameData.has_initial_orders
+            ? gameData.has_initial_orders
+            : {};
         this.stances = gameData.stances ? gameData.stances : {};
-        this.order_suggestions = gameData.order_suggestions ? gameData.order_suggestions : {};
+        this.order_suggestions = gameData.order_suggestions
+            ? gameData.order_suggestions
+            : {};
         this.is_bot = gameData.is_bot ? gameData.is_bot : {};
         this.deceiving = gameData.deceiving ? gameData.deceiving : {};
 
         // {short phase name => state}
-        this.state_history = new SortedDict(gameData instanceof Game ? gameData.state_history.toDict() : gameData.state_history, comparablePhase);
+        this.state_history = new SortedDict(
+            gameData instanceof Game
+                ? gameData.state_history.toDict()
+                : gameData.state_history,
+            comparablePhase
+        );
         // {short phase name => {power name => [orders]}}
-        this.order_history = new SortedDict(gameData instanceof Game ? gameData.order_history.toDict() : gameData.order_history, comparablePhase);
+        this.order_history = new SortedDict(
+            gameData instanceof Game
+                ? gameData.order_history.toDict()
+                : gameData.order_history,
+            comparablePhase
+        );
         // {short phase name => {unit => [results]}}
-        this.result_history = new SortedDict(gameData instanceof Game ? gameData.result_history.toDict() : gameData.result_history, comparablePhase);
+        this.result_history = new SortedDict(
+            gameData instanceof Game
+                ? gameData.result_history.toDict()
+                : gameData.result_history,
+            comparablePhase
+        );
         this.stance_history = gameData.stance_history;
         this.is_bot_history = gameData.is_bot_history;
         this.deceiving_history = gameData.deceiving_history;
         // {short phase name => {message.time_sent => message}}
         if (gameData instanceof Game) {
-            this.message_history = new SortedDict(gameData.message_history.toDict(), comparablePhase);
-            this.log_history = new SortedDict(gameData.log_history.toDict(), comparablePhase);
+            this.message_history = new SortedDict(
+                gameData.message_history.toDict(),
+                comparablePhase
+            );
+            this.log_history = new SortedDict(
+                gameData.log_history.toDict(),
+                comparablePhase
+            );
         } else {
             this.message_history = new SortedDict(null, comparablePhase);
             for (let entry of Object.entries(gameData.message_history)) {
                 const shortPhaseName = entry[0];
                 const phaseMessages = entry[1];
-                const sortedPhaseMessages = new SortedDict(phaseMessages, parseInt);
+                const sortedPhaseMessages = new SortedDict(
+                    phaseMessages,
+                    parseInt
+                );
                 this.message_history.put(shortPhaseName, sortedPhaseMessages);
             }
             this.log_history = new SortedDict(null, comparablePhase);
@@ -134,9 +187,12 @@ export class Game {
                 const powerState = entry[1];
                 if (powerState instanceof Power) {
                     this.powers[power_name] = powerState.copy();
-
                 } else {
-                    this.powers[power_name] = new Power(power_name, (this.isPlayerGame() ? power_name : this.role), this);
+                    this.powers[power_name] = new Power(
+                        power_name,
+                        this.isPlayerGame() ? power_name : this.role,
+                        this
+                    );
                     this.powers[power_name].setState(powerState);
                 }
 
@@ -157,7 +213,11 @@ export class Game {
             const lastState = this.state_history.lastValue();
             if (lastState.units) {
                 for (let powerName of Object.keys(lastState.units)) {
-                    this.powers[powerName] = new Power(powerName, (this.isPlayerGame() ? powerName : this.role), this);
+                    this.powers[powerName] = new Power(
+                        powerName,
+                        this.isPlayerGame() ? powerName : this.role,
+                        this
+                    );
                 }
             }
         }
@@ -183,47 +243,110 @@ export class Game {
         for (let orders of Object.values(possibleOrders)) {
             for (let order of orders) {
                 // We ignore WAIVE order.
-                if (order === 'WAIVE')
-                    continue;
+                if (order === "WAIVE") continue;
                 const pieces = order.split(/ +/);
                 const thirdPiece = pieces[2];
                 const lastPiece = pieces[pieces.length - 1];
                 switch (thirdPiece) {
-                    case 'H':
+                    case "H":
                         // 'H', unit
-                        UTILS.javascript.extendTreeValue(tree, ['H'], `${pieces[0]} ${pieces[1]}`);
-                        UTILS.javascript.extendArrayWithUniqueValues(locToTypes, pieces[1], 'H');
+                        UTILS.javascript.extendTreeValue(
+                            tree,
+                            ["H"],
+                            `${pieces[0]} ${pieces[1]}`
+                        );
+                        UTILS.javascript.extendArrayWithUniqueValues(
+                            locToTypes,
+                            pieces[1],
+                            "H"
+                        );
                         break;
-                    case '-':
+                    case "-":
                         // 'M', unit, province
                         // 'V', unit, province
-                        UTILS.javascript.extendTreeValue(tree, ['M', `${pieces[0]} ${pieces[1]}`, pieces[3]], (lastPiece === 'VIA' ? 'V' : 'M'));
-                        UTILS.javascript.extendArrayWithUniqueValues(locToTypes, pieces[1], 'M');
+                        UTILS.javascript.extendTreeValue(
+                            tree,
+                            ["M", `${pieces[0]} ${pieces[1]}`, pieces[3]],
+                            lastPiece === "VIA" ? "V" : "M"
+                        );
+                        UTILS.javascript.extendArrayWithUniqueValues(
+                            locToTypes,
+                            pieces[1],
+                            "M"
+                        );
                         break;
-                    case 'S':
+                    case "S":
                         // 'S', supporter unit, supported unit, province
-                        UTILS.javascript.extendTreeValue(tree, ['S', `${pieces[0]} ${pieces[1]}`, `${pieces[3]} ${pieces[4]}`], lastPiece);
-                        UTILS.javascript.extendArrayWithUniqueValues(locToTypes, pieces[1], 'S');
+                        UTILS.javascript.extendTreeValue(
+                            tree,
+                            [
+                                "S",
+                                `${pieces[0]} ${pieces[1]}`,
+                                `${pieces[3]} ${pieces[4]}`,
+                            ],
+                            lastPiece
+                        );
+                        UTILS.javascript.extendArrayWithUniqueValues(
+                            locToTypes,
+                            pieces[1],
+                            "S"
+                        );
                         break;
-                    case 'C':
+                    case "C":
                         // 'C', convoyer unit, convoyed unit, province
-                        UTILS.javascript.extendTreeValue(tree, ['C', `${pieces[0]} ${pieces[1]}`, `${pieces[3]} ${pieces[4]}`], pieces[6]);
-                        UTILS.javascript.extendArrayWithUniqueValues(locToTypes, pieces[1], 'C');
+                        UTILS.javascript.extendTreeValue(
+                            tree,
+                            [
+                                "C",
+                                `${pieces[0]} ${pieces[1]}`,
+                                `${pieces[3]} ${pieces[4]}`,
+                            ],
+                            pieces[6]
+                        );
+                        UTILS.javascript.extendArrayWithUniqueValues(
+                            locToTypes,
+                            pieces[1],
+                            "C"
+                        );
                         break;
-                    case 'R':
+                    case "R":
                         // 'R', unit, province
-                        UTILS.javascript.extendTreeValue(tree, ['R', `${pieces[0]} ${pieces[1]}`], pieces[3]);
-                        UTILS.javascript.extendArrayWithUniqueValues(locToTypes, pieces[1], 'R');
+                        UTILS.javascript.extendTreeValue(
+                            tree,
+                            ["R", `${pieces[0]} ${pieces[1]}`],
+                            pieces[3]
+                        );
+                        UTILS.javascript.extendArrayWithUniqueValues(
+                            locToTypes,
+                            pieces[1],
+                            "R"
+                        );
                         break;
-                    case 'D':
+                    case "D":
                         // D, unit
-                        UTILS.javascript.extendTreeValue(tree, ['D'], `${pieces[0]} ${pieces[1]}`);
-                        UTILS.javascript.extendArrayWithUniqueValues(locToTypes, pieces[1], 'D');
+                        UTILS.javascript.extendTreeValue(
+                            tree,
+                            ["D"],
+                            `${pieces[0]} ${pieces[1]}`
+                        );
+                        UTILS.javascript.extendArrayWithUniqueValues(
+                            locToTypes,
+                            pieces[1],
+                            "D"
+                        );
                         break;
-                    case 'B':
+                    case "B":
                         // B, unit
-                        UTILS.javascript.extendTreeValue(tree, [pieces[0]], pieces[1]);
-                        UTILS.javascript.extendArrayWithUniqueValues(locToTypes, pieces[1], pieces[0]);
+                        UTILS.javascript.extendTreeValue(
+                            tree,
+                            [pieces[0]],
+                            pieces[1]
+                        );
+                        UTILS.javascript.extendArrayWithUniqueValues(
+                            locToTypes,
+                            pieces[1],
+                            pieces[0]
+                        );
                         break;
                     default:
                         throw new Error(`Unable to parse order: ${order}`);
@@ -233,17 +356,39 @@ export class Game {
     }
 
     extendPhaseHistory(phaseData) {
-        if (this.state_history.contains(phaseData.name)) throw new Error(`Phase ${phaseData.phase} already in state history.`);
-        if (this.message_history.contains(phaseData.name)) throw new Error(`Phase ${phaseData.phase} already in message history.`);
-        if (this.log_history.contains(phaseData.name)) throw new Error(`Phase ${phaseData.phase} already in log history.`);
-        if (this.order_history.contains(phaseData.name)) throw new Error(`Phase ${phaseData.phase} already in order history.`);
-        if (this.result_history.contains(phaseData.name)) throw new Error(`Phase ${phaseData.phase} already in result history.`);
-        if (this.log_history.contains(phaseData.name)) throw new Error(`Phase ${phaseData.phase} already in result history.`);
+        if (this.state_history.contains(phaseData.name))
+            throw new Error(
+                `Phase ${phaseData.phase} already in state history.`
+            );
+        if (this.message_history.contains(phaseData.name))
+            throw new Error(
+                `Phase ${phaseData.phase} already in message history.`
+            );
+        if (this.log_history.contains(phaseData.name))
+            throw new Error(`Phase ${phaseData.phase} already in log history.`);
+        if (this.order_history.contains(phaseData.name))
+            throw new Error(
+                `Phase ${phaseData.phase} already in order history.`
+            );
+        if (this.result_history.contains(phaseData.name))
+            throw new Error(
+                `Phase ${phaseData.phase} already in result history.`
+            );
+        if (this.log_history.contains(phaseData.name))
+            throw new Error(
+                `Phase ${phaseData.phase} already in result history.`
+            );
         this.state_history.put(phaseData.name, phaseData.state);
         this.order_history.put(phaseData.name, phaseData.orders);
         this.result_history.put(phaseData.name, phaseData.results);
-        this.message_history.put(phaseData.name, new SortedDict(phaseData.messages, parseInt));
-        this.log_history.put(phaseData.name, new SortedDict(phaseData.logs, parseInt));
+        this.message_history.put(
+            phaseData.name,
+            new SortedDict(phaseData.messages, parseInt)
+        );
+        this.log_history.put(
+            phaseData.name,
+            new SortedDict(phaseData.logs, parseInt)
+        );
     }
 
     addRecipientAnnotation(annotation) {
@@ -259,7 +404,7 @@ export class Game {
     }
 
     addDeceiving(controlledPower, targetPower, deceiving) {
-        console.log('addDeceiving', controlledPower, targetPower, deceiving)
+        console.log("addDeceiving", controlledPower, targetPower, deceiving);
     }
 
     getInitialOrders(power) {
@@ -279,42 +424,74 @@ export class Game {
     addMessage(message) {
         message = new Message(message);
         if (!message.time_sent)
-            throw new Error('No time sent for given message.');
+            throw new Error("No time sent for given message.");
         if (this.messages.hasOwnProperty(message.time_sent))
-            throw new Error('There is already a message with time sent ' + message.time_sent + ' in message history.');
-        if (this.isPlayerGame() && !message.isGlobal() && this.role !== message.sender && this.role !== message.recipient)
-            throw new Error('Given message is not related to current player ' + this.role);
+            throw new Error(
+                "There is already a message with time sent " +
+                    message.time_sent +
+                    " in message history."
+            );
+        if (
+            this.isPlayerGame() &&
+            !message.isGlobal() &&
+            this.role !== message.sender &&
+            this.role !== message.recipient
+        )
+            throw new Error(
+                "Given message is not related to current player " + this.role
+            );
         this.messages.put(message.time_sent, message);
     }
 
     addLog(message) {
         message = new Message(message);
         if (!message.time_sent)
-            throw new Error('No time sent for given message.');
+            throw new Error("No time sent for given message.");
         if (this.logs.hasOwnProperty(message.time_sent))
-            throw new Error('There is already a log with time sent ' + message.time_sent + ' in message history.');
-        if (this.isPlayerGame() && !message.isGlobal() && this.role !== message.sender && this.role !== message.recipient)
-            throw new Error('Given message is not related to current player ' + this.role);
+            throw new Error(
+                "There is already a log with time sent " +
+                    message.time_sent +
+                    " in message history."
+            );
+        if (
+            this.isPlayerGame() &&
+            !message.isGlobal() &&
+            this.role !== message.sender &&
+            this.role !== message.recipient
+        )
+            throw new Error(
+                "Given message is not related to current player " + this.role
+            );
         this.logs.put(message.time_sent, message);
     }
 
     addOrderSuggestions(power, suggestions) {
-        console.log('added for ' + power + ': ' + suggestions);
+        console.log("added for " + power + ": " + suggestions);
     }
 
     assertPlayerGame(powerName) {
         if (!this.isPlayerGame(powerName))
-            throw new Error('Expected a player game' + (powerName ? (' ' + powerName) : '') + ', got role ' + this.role + '.');
+            throw new Error(
+                "Expected a player game" +
+                    (powerName ? " " + powerName : "") +
+                    ", got role " +
+                    this.role +
+                    "."
+            );
     }
 
     assertObserverGame() {
         if (!this.isObserverGame())
-            throw new Error('Expected an observer game, got role ' + this.role + '.');
+            throw new Error(
+                "Expected an observer game, got role " + this.role + "."
+            );
     }
 
     assertOmniscientGame() {
         if (!this.isOmniscientGame())
-            throw new Error('Expected an omniscient game, got role ' + this.role + '.');
+            throw new Error(
+                "Expected an omniscient game, got role " + this.role + "."
+            );
     }
 
     clearCenters(powerName) {
@@ -339,7 +516,7 @@ export class Game {
 
     clearVote() {
         for (let power_name of Object.keys(this.powers))
-            this.powers[power_name].vote = 'neutral';
+            this.powers[power_name].vote = "neutral";
     }
 
     countControlledPowers() {
@@ -351,15 +528,21 @@ export class Game {
 
     extendStateHistory(state) {
         if (this.state_history.contains(state.name))
-            throw new Error('There is already a state with phase ' + state.name + ' in state history.');
+            throw new Error(
+                "There is already a state with phase " +
+                    state.name +
+                    " in state history."
+            );
         this.state_history.put(state.name, state);
     }
 
     getLatestTimestamp() {
         return Math.max(
             this.timestamp_created,
-            (this.state_history.size() ? this.state_history.lastValue().timestamp : 0),
-            (this.messages.size() ? this.messages.lastKey() : 0)
+            this.state_history.size()
+                ? this.state_history.lastValue().timestamp
+                : 0,
+            this.messages.size() ? this.messages.lastKey() : 0
         );
     }
 
@@ -376,7 +559,9 @@ export class Game {
     }
 
     isPlayerGame(powerName) {
-        return (this.hasPower(this.role) && (!powerName || this.role === powerName));
+        return (
+            this.hasPower(this.role) && (!powerName || this.role === powerName)
+        );
     }
 
     isObserverGame() {
@@ -388,22 +573,27 @@ export class Game {
     }
 
     isRealTime() {
-        return this.rules.includes('REAL_TIME');
+        return this.rules.includes("REAL_TIME");
     }
 
     isNoCheck() {
-        return this.rules.includes('NO_CHECK');
+        return this.rules.includes("NO_CHECK");
     }
 
     setPhaseData(phaseData) {
         this.setState(phaseData.state);
         this.clearOrders();
         for (let entry of Object.entries(phaseData.orders)) {
-            if (entry[1])
-                this.setOrders(entry[0], entry[1]);
+            if (entry[1]) this.setOrders(entry[0], entry[1]);
         }
-        this.messages = phaseData.messages instanceof SortedDict ? phaseData.messages : new SortedDict(phaseData.messages, parseInt);
-        this.logs = phaseData.logs instanceof SortedDict ? phaseData.logs : new SortedDict(phaseData.logs, parseInt);
+        this.messages =
+            phaseData.messages instanceof SortedDict
+                ? phaseData.messages
+                : new SortedDict(phaseData.messages, parseInt);
+        this.logs =
+            phaseData.logs instanceof SortedDict
+                ? phaseData.logs
+                : new SortedDict(phaseData.logs, parseInt);
     }
 
     setState(state) {
@@ -418,10 +608,9 @@ export class Game {
                     power.retreats = {};
                     power.units = [];
                     for (let unit of units) {
-                        if (unit.charAt(0) === '*')
+                        if (unit.charAt(0) === "*")
                             power.retreats[unit.substr(1)] = {};
-                        else
-                            power.units.push(unit);
+                        else power.units.push(unit);
                     }
                 }
             }
@@ -437,13 +626,14 @@ export class Game {
         if (state.influence)
             for (let power_name of Object.keys(state.influence))
                 if (this.powers.hasOwnProperty(power_name))
-                    this.powers[power_name].influence = state.influence[power_name];
+                    this.powers[power_name].influence =
+                        state.influence[power_name];
         if (state.civil_disorder)
             for (let power_name of Object.keys(state.civil_disorder))
                 if (this.powers.hasOwnProperty(power_name))
-                    this.powers[power_name].civil_disorder = state.civil_disorder[power_name];
-        if (state.builds)
-            this.builds = state.builds;
+                    this.powers[power_name].civil_disorder =
+                        state.civil_disorder[power_name];
+        if (state.builds) this.builds = state.builds;
         if (state.stances) {
             for (let power of Object.keys(state.stances)) {
                 if (this.powers.hasOwnProperty(power)) {
@@ -469,7 +659,10 @@ export class Game {
     }
 
     setOrders(powerName, orders) {
-        if (this.powers.hasOwnProperty(powerName) && (!this.isPlayerGame() || this.isPlayerGame(powerName)))
+        if (
+            this.powers.hasOwnProperty(powerName) &&
+            (!this.isPlayerGame() || this.isPlayerGame(powerName))
+        )
             this.powers[powerName].setOrders(orders);
     }
 
@@ -480,13 +673,17 @@ export class Game {
     }
 
     updateDummyPowers(dummyPowers) {
-        for (let dummyPowerName of dummyPowers) if (this.powers.hasOwnProperty(dummyPowerName))
-            this.powers[dummyPowerName].setDummy();
+        for (let dummyPowerName of dummyPowers)
+            if (this.powers.hasOwnProperty(dummyPowerName))
+                this.powers[dummyPowerName].setDummy();
     }
 
     updatePowersControllers(controllers, timestamps) {
         for (let entry of Object.entries(controllers)) {
-            this.getPower(entry[0]).updateController(entry[1], timestamps[entry[0]]);
+            this.getPower(entry[0]).updateController(
+                entry[1],
+                timestamps[entry[0]]
+            );
         }
     }
 
@@ -508,7 +705,7 @@ export class Game {
                 state: this.state_history.get(pastPhase),
                 orders: this.order_history.get(pastPhase),
                 messages: this.message_history.get(pastPhase),
-                logs: this.log_history.get(pastPhase)
+                logs: this.log_history.get(pastPhase),
             });
             return game;
         }
@@ -516,7 +713,11 @@ export class Game {
     }
 
     getPhaseType() {
-        if (this.phase === null || this.phase === 'FORMING' || this.phase === 'COMPLETED')
+        if (
+            this.phase === null ||
+            this.phase === "FORMING" ||
+            this.phase === "COMPLETED"
+        )
             return null;
         return this.phase[this.phase.length - 1];
     }
@@ -545,7 +746,8 @@ export class Game {
                 powerOrders[serverOrder.loc] = serverOrder;
                 ++countOrders;
             }
-            orders[powerName] = (countOrders || power.order_is_set) ? powerOrders : null;
+            orders[powerName] =
+                countOrders || power.order_is_set ? powerOrders : null;
         }
         return orders;
     }
@@ -555,7 +757,7 @@ export class Game {
         role = role || this.role;
         let powerLogs = [];
         if (this.logs.size() && !this.log_history.contains(this.phase)) {
-            logList.push(this.logs)
+            logList.push(this.logs);
         }
         if (this.log_history.contains(this.phase)) {
             logList.push(this.log_history.get(this.phase));
@@ -564,8 +766,7 @@ export class Game {
         for (let logs of logList) {
             for (let log of logs.values()) {
                 let sender = log.sender;
-                if (sender === role)
-                    powerLogs.push(log);
+                if (sender === role) powerLogs.push(log);
             }
         }
         return powerLogs;
@@ -580,19 +781,102 @@ export class Game {
             if (this.logs.size() && !this.log_history.contains(this.phase))
                 logList.push(this.logs);
         } else {
-            if (this.logs.size())
-                logList = [this.logs];
+            if (this.logs.size()) logList = [this.logs];
             else if (this.log_history.contains(this.phase))
                 logList = this.log_history.get(this.phase);
         }
         for (let logs of logList) {
             for (let log of logs.values()) {
                 let sender = log.sender;
-                if (sender === role)
-                    powerLogs.push(log);
+                if (sender === role) powerLogs.push(log);
             }
         }
         return powerLogs;
+    }
+
+    getOrderLogs() {
+        return this.order_log_history;
+    }
+
+    simplifyOrders(orders) {
+        const addOrderRegex = /^([A-Z]+)\Wadded:\W([A-Z]\W[A-Z]{3})(.*)$/;
+        const removeOrderRegex = /^([A-Z]+)\Wremoved:\W(.*)$/;
+        const removeAllOrdersRegex = /^([A-Z]+)\Wremoved\Wits\Worders:$/;
+        const finalOrders = {};
+
+        for (const [_, orderStr] of Object.entries(orders)) {
+            if (orderStr.match(removeAllOrdersRegex)) {
+                finalOrders[orderStr.match(removeAllOrdersRegex)[1]] = [];
+            } else if (orderStr.match(removeOrderRegex)) {
+                const power = orderStr.match(removeOrderRegex)[1];
+                const order = orderStr.match(removeOrderRegex)[2];
+                if (finalOrders.hasOwnProperty(power) && finalOrders[power].includes(orderStr)) {
+                    finalOrders[power].splice(finalOrders[power].indexOf(orderStr), 1);
+                }
+            } else if (orderStr.match(addOrderRegex)) {
+                const power = orderStr.match(addOrderRegex)[1];
+                const unit = orderStr.match(addOrderRegex)[2];
+                const unitOrder = orderStr.match(addOrderRegex)[3];
+                const order = unit + unitOrder;
+                let matchFound = false;
+
+                if (!finalOrders.hasOwnProperty(power)) {
+                    finalOrders[power] = [order];
+                } else {
+                    for (const finalOrder of finalOrders[power]) {
+                        if (finalOrder.includes(unit)) {
+                            finalOrders[power].splice(finalOrders[power].indexOf(finalOrder), 1, order);
+                            matchFound = true;
+                        }
+                    }
+                    if (!matchFound) {
+                        // push and sort
+                        finalOrders[power].push(order);
+                        finalOrders[power].sort();
+                    }
+                }
+            }
+
+        }
+        return finalOrders;
+    }
+
+    getMessageOrder() {
+        const orderLogs = this.getOrderLogs();
+        const messageHistory = this.message_history;
+        let initialOrders = {};
+        let messageOrders = {};
+
+        for (const [phase, logs] of Object.entries(orderLogs)) {
+            if (phase.slice(-1) === "M") {
+                const firstMessageTimestamp = messageHistory
+                    .get(phase)
+                    .valueFromIndex(0);
+                const initialOrdersThisPhase = Object.fromEntries(
+                    Object.entries(logs).filter(
+                        ([k, v]) => k <= firstMessageTimestamp
+                    )
+                );
+                const orderAdjustments = Object.fromEntries(
+                    Object.entries(logs).filter(
+                        ([k, v]) => k > firstMessageTimestamp
+                    )
+                );
+                initialOrders[phase] = this.simplifyOrders(
+                    initialOrdersThisPhase
+                );
+
+                let messageOrderThisPhase = messageHistory.get(phase); // sorted dict
+                for (const [timestamp, order] of Object.entries(
+                    orderAdjustments
+                )) {
+                    messageOrderThisPhase.put(timestamp, order);
+                }
+                messageOrders[phase] = messageOrderThisPhase;
+            }
+        }
+
+        return [initialOrders, messageOrders];
     }
 
     getAnnotatedMessages() {
@@ -605,20 +889,21 @@ export class Game {
         let messagesToShow = null;
         if (all) {
             messagesToShow = this.message_history.values();
-            if (this.messages.size() && !this.message_history.contains(this.phase))
+            if (
+                this.messages.size() &&
+                !this.message_history.contains(this.phase)
+            )
                 messagesToShow.push(this.messages);
         } else {
-            if (this.messages.size())
-                messagesToShow = [this.messages];
+            if (this.messages.size()) messagesToShow = [this.messages];
             else if (this.message_history.contains(this.phase))
                 messagesToShow = this.message_history.get(this.phase);
         }
-        if (!messagesToShow || !messagesToShow.length)
-            return messageChannels;
+        if (!messagesToShow || !messagesToShow.length) return messageChannels;
         for (let messages of messagesToShow) {
             for (let message of messages.values()) {
                 let protagonist = null;
-                if (message.sender === role || message.recipient === 'GLOBAL')
+                if (message.sender === role || message.recipient === "GLOBAL")
                     protagonist = message.recipient;
                 else if (message.recipient === role)
                     protagonist = message.sender;
@@ -626,7 +911,8 @@ export class Game {
                     messageChannels[protagonist] = [];
 
                 if (this.annotated_messages.hasOwnProperty(message.time_sent)) {
-                    message.recipient_annotation = this.annotated_messages[message.time_sent];
+                    message.recipient_annotation =
+                        this.annotated_messages[message.time_sent];
                 }
                 messageChannels[protagonist].push(message);
             }
@@ -636,8 +922,7 @@ export class Game {
 
     markAllMessagesRead() {
         for (let message of this.messages.values()) {
-            if (message.sender !== this.role)
-                message.read = true;
+            if (message.sender !== this.role) message.read = true;
         }
     }
 
@@ -646,7 +931,11 @@ export class Game {
         this.orderableLocations = possibleOrders.orderable_locations;
         this.ordersTree = {};
         this.orderableLocToTypes = {};
-        Game.createOrdersTree(this.possibleOrders, this.ordersTree, this.orderableLocToTypes);
+        Game.createOrdersTree(
+            this.possibleOrders,
+            this.ordersTree,
+            this.orderableLocToTypes
+        );
     }
 
     getOrderTypeToLocs(powerName) {
@@ -655,7 +944,10 @@ export class Game {
             // loc may be a coastal province. In such case, we must check province coasts too.
             const associatedLocs = [];
             for (let possibleLoc of Object.keys(this.orderableLocToTypes)) {
-                if (possibleLoc.substring(0, 3).toUpperCase() === loc.toUpperCase()) {
+                if (
+                    possibleLoc.substring(0, 3).toUpperCase() ===
+                    loc.toUpperCase()
+                ) {
                     associatedLocs.push(possibleLoc);
                 }
             }
@@ -664,8 +956,7 @@ export class Game {
                 for (let orderType of orderTypes) {
                     if (!typeToLocs.hasOwnProperty(orderType))
                         typeToLocs[orderType] = [associatedLoc];
-                    else
-                        typeToLocs[orderType].push(associatedLoc);
+                    else typeToLocs[orderType].push(associatedLoc);
                 }
             }
         }
@@ -673,7 +964,9 @@ export class Game {
     }
 
     _build_sites(power) {
-        const homes = this.rules.includes('BUILD_ANY') ? power.centers : power.homes;
+        const homes = this.rules.includes("BUILD_ANY")
+            ? power.centers
+            : power.homes;
         const occupiedLocations = [];
         for (let p of Object.values(this.powers)) {
             for (let unit of p.units) {
@@ -689,8 +982,7 @@ export class Game {
     }
 
     getBuildsCount(powerName) {
-        if (this.getPhaseType() !== 'A')
-            return 0;
+        if (this.getPhaseType() !== "A") return 0;
         const power = this.powers[powerName];
         let buildCount = power.centers.length - power.units.length;
         if (buildCount > 0) {
