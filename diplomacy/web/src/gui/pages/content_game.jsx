@@ -176,7 +176,8 @@ export class ContentGame extends React.Component {
             }
         }
         this.schedule_timeout_id = null;
-        [this.initialPlayerOrders, this.messageOrders] = this.props.data.getMessageOrder();
+        [this.initialPlayerOrders, this.messageOrders] =
+            this.props.data.getMessageOrder();
         this.state = {
             tabMain: null,
             tabPastMessages: null,
@@ -1316,8 +1317,18 @@ export class ContentGame extends React.Component {
         return render;
     }
 
+    filterMessageOrder(messageOrders, currentPower, protagonist) {
+        const powerRegex = /^([A-Z]+)\W.*/;
+        let filtered = {};
+    }
+
     renderPastMessages(engine, role) {
-        const messageChannels = engine.getMessageChannels(role, false);
+        const { initialEngine, pastPhases, phaseIndex } =
+            this.__get_engine_to_display(engine);
+        const messageChannels = engine.getMessageOrderChannels(
+            role,
+            pastPhases[phaseIndex]
+        );
 
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
@@ -1359,7 +1370,7 @@ export class ContentGame extends React.Component {
         let curPhase = "";
         let prevPhase = "";
 
-        for (let m in msgs) {
+        /* for (let m in msgs) {
             let msg = msgs[m];
             sender = msg.sender;
             rec = msg.recipient;
@@ -1387,6 +1398,17 @@ export class ContentGame extends React.Component {
                     <Avatar src={POWER_ICONS[sender]} name={sender} size="sm" />
                 </ChatMessage>
             );
+        } */
+
+        const sortedDict = this.messageOrders[pastPhases[phaseIndex]];
+        console.log(sortedDict.values());
+
+        for (let m of sortedDict.values()) {
+            if (m.hasOwnProperty("message")) {
+                // messages goes here
+            } else {
+                // orders goes here
+            }
         }
 
         return (
@@ -1419,14 +1441,6 @@ export class ContentGame extends React.Component {
         const convList = tabNames.map((protagonist) => (
             <div style={{ minWidth: "200px" }}>
                 <Conversation
-                    info={
-                        /* protagonist !== "GLOBAL"
-                            ? this.truncate(
-                                  engine.powers[protagonist].getController()
-                              )
-                            :  */
-                        ""
-                    }
                     className={
                         protagonist === currentTabId
                             ? "cs-conversation--active"
@@ -2098,7 +2112,7 @@ export class ContentGame extends React.Component {
             const dipccMatch = log.message.match(dipccRegex);
             const intentRecordMatch = log.message.match(intentRecordRegex);
 
-            if (pastPhases[phaseIndex] !== log.phase) {
+            if (pastPhases[phaseIndex] !== log.phase || startOfPhaseMatch) {
                 return;
             }
 

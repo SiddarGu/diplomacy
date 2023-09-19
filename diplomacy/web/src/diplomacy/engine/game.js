@@ -814,7 +814,10 @@ export class Game {
                 const unitOrder = orderStr.match(removeOrderRegex)[3];
                 const order = unit + unitOrder;
 
-                if (finalOrders.hasOwnProperty(power) && finalOrders[power].hasOwnProperty(order)) {
+                if (
+                    finalOrders.hasOwnProperty(power) &&
+                    finalOrders[power].hasOwnProperty(order)
+                ) {
                     delete finalOrders[power][unit];
                 }
             } else if (orderStr.match(addOrderRegex)) {
@@ -824,48 +827,88 @@ export class Game {
                 const order = unit + unitOrder;
 
                 if (!finalOrders.hasOwnProperty(power)) {
-                    finalOrders[power] = {[unit]: order};
+                    finalOrders[power] = { [unit]: order };
                 } else {
                     finalOrders[power][unit] = order;
                 }
             }
         }
-        
+
         // change dict to array
         let result = {};
         for (const [power, orders] of Object.entries(finalOrders)) {
             result[power] = Object.values(orders).sort();
         }
-        
+
         return result;
     }
 
     getMessageOrder() {
         const orderLogs = this.getOrderLogs();
         const messageHistory = this.message_history;
+        const powerRegex = /^([A-Z]+)\W/;
+
         let initialOrders = {};
         let messageOrders = {};
+        let firstMessageTimestampDict = {};
+        let initialOrderLogs = {};
+        let orderAdjustments = {};
 
         for (const [phase, logs] of Object.entries(orderLogs)) {
-            if (phase.slice(-1) === "M") {
-                const firstMessageTimestamp = messageHistory
+            if (
+                phase.slice(-1) === "M" &&
+                messageHistory &&
+                messageHistory.contains(phase)
+            ) {
+                let firstMessageTimestampThisPhase = {};
+                let initialOrderLogsThisPhase = {};
+                let orderAdjustmentsThisPhase = {};
+
+                messageHistory
                     .get(phase)
-                    .valueFromIndex(0);
-                const initialOrdersThisPhase = Object.fromEntries(
-                    Object.entries(logs).filter(
-                        ([k, v]) => k <= firstMessageTimestamp
-                    )
-                );
-                const orderAdjustments = Object.fromEntries(
-                    Object.entries(logs).filter(
-                        ([k, v]) => k > firstMessageTimestamp
-                    )
-                );
+                    .values()
+                    .map((message) => {
+                        const sender = message.sender;
+
+                        if (!firstMessageTimestampThisPhase[sender]) {
+                            firstMessageTimestampThisPhase[sender] =
+                                message.time_sent;
+                        } else if (
+                            message.time_sent <
+                            firstMessageTimestampThisPhase[sender]
+                        ) {
+                            firstMessageTimestampThisPhase[sender] =
+                                message.time_sent;
+                        }
+                    });
+                firstMessageTimestampDict[phase] =
+                    firstMessageTimestampThisPhase;
+
+                for (const [timestamp, log] of Object.entries(logs)) {
+                    const power = log.match(powerRegex)[1];
+                    if (
+                        parseInt(timestamp) <=
+                        parseInt(firstMessageTimestampThisPhase[power])
+                    ) {
+                        initialOrderLogsThisPhase[timestamp] = log;
+                    } else {
+                        orderAdjustmentsThisPhase[timestamp] = log;
+                    }
+                }
+                initialOrderLogs[phase] = initialOrderLogsThisPhase;
+                orderAdjustments[phase] = orderAdjustmentsThisPhase;
+
                 initialOrders[phase] = this.simplifyOrders(
-                    initialOrdersThisPhase
+                    initialOrderLogs[phase]
                 );
 
-                let messageOrderThisPhase = messageHistory.get(phase); // sorted dict
+                let messageOrderThisPhase = new SortedDict(null, parseInt);
+
+                for (const [_, message] of Object.entries(
+                    messageHistory.get(phase).values()
+                )) {
+                    messageOrderThisPhase.put(message.time_sent, message);
+                }
                 for (const [timestamp, order] of Object.entries(
                     orderAdjustments
                 )) {
@@ -874,12 +917,53 @@ export class Game {
                 messageOrders[phase] = messageOrderThisPhase;
             }
         }
-
         return [initialOrders, messageOrders];
     }
 
     getAnnotatedMessages() {
         return this.annotated_messages;
+    }
+
+    getMessageOrderChannels(role, phase) {
+        const [_, messageOrders] = this.getMessageOrder();
+        const messageChannels = {};
+        role = role || this.role;
+        let messagesToShow = messageOrders[phase].values();
+        if (!messagesToShow || !messagesToShow.length) return messageChannels;
+
+        for (let message of messagesToShow) {
+            if (message.hasOwnProperty("message")) {
+                let protagonist = null;
+                if (message.sender === role || message.recipient === "GLOBAL")
+                    protagonist = message.recipient;
+                else if (message.recipient === role)
+                    protagonist = message.sender;
+                if (!messageChannels.hasOwnProperty(protagonist))
+                    messageChannels[protagonist] = [];
+
+                if (this.annotated_messages.hasOwnProperty(message.time_sent)) {
+                    message.recipient_annotation =
+                        this.annotated_messages[message.time_sent];
+                }
+                messageChannels[protagonist].push(message);
+            } else {
+                // add to all convos
+                for (let p of [
+                    "AUSTRIA",
+                    "ENGLAND",
+                    "FRANCE",
+                    "GERMANY",
+                    "ITALY",
+                    "RUSSIA",
+                    "TURKEY",
+                ]) {
+                    if (!messageChannels.hasOwnProperty(p))
+                        messageChannels[p] = [];
+                    messageChannels[p].push(message);
+                }
+            }
+        }
+        return messageChannels;
     }
 
     getMessageChannels(role, all) {
