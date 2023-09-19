@@ -176,6 +176,7 @@ export class ContentGame extends React.Component {
             }
         }
         this.schedule_timeout_id = null;
+        [this.initialPlayerOrders, this.messageOrders] = this.props.data.getMessageOrder();
         this.state = {
             tabMain: null,
             tabPastMessages: null,
@@ -1813,10 +1814,8 @@ export class ContentGame extends React.Component {
     renderTabResults(toDisplay, initialEngine) {
         const { engine, pastPhases, phaseIndex } =
             this.__get_engine_to_display(initialEngine);
-        const [initialPlayerOrders, messageOrders] =
-            initialEngine.getMessageOrder();
         const initialPlayerOrdersThisPhase =
-            initialPlayerOrders[pastPhases[phaseIndex]];
+            this.initialPlayerOrders[pastPhases[phaseIndex]];
         let orders = {};
         let orderResult = null;
         if (engine.order_history.contains(engine.phase))
@@ -1857,7 +1856,8 @@ export class ContentGame extends React.Component {
                             .split(", ")
                             .map((order) => {
                                 return order.replace(/['"]+/g, "");
-                            }).sort();
+                            })
+                            .sort();
                         startIntentions[power] = startOrders;
                     }
                 }
@@ -1898,7 +1898,8 @@ export class ContentGame extends React.Component {
                             ""
                         ) : (
                             <div key={powerName} className={"row"}>
-                                {initialPlayerOrdersThisPhase.hasOwnProperty(
+                                {initialPlayerOrdersThisPhase &&
+                                initialPlayerOrdersThisPhase.hasOwnProperty(
                                     powerName
                                 ) ? (
                                     <div className={"past-power-name col-sm-2"}>
@@ -1916,9 +1917,10 @@ export class ContentGame extends React.Component {
                                                 <div key={index}>{order}</div>
                                             )
                                         )}
-                                    {initialPlayerOrdersThisPhase.hasOwnProperty(
-                                        powerName
-                                    ) &&
+                                    {initialPlayerOrdersThisPhase &&
+                                        initialPlayerOrdersThisPhase.hasOwnProperty(
+                                            powerName
+                                        ) &&
                                         initialPlayerOrdersThisPhase[
                                             powerName
                                         ].map((order) => <div>{order}</div>)}

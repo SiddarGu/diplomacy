@@ -800,45 +800,44 @@ export class Game {
 
     simplifyOrders(orders) {
         const addOrderRegex = /^([A-Z]+)\Wadded:\W([A-Z]\W[A-Z]{3})(.*)$/;
-        const removeOrderRegex = /^([A-Z]+)\Wremoved:\W(.*)$/;
+        const removeOrderRegex = /^([A-Z]+)\Wremoved:\W([A-Z]\W[A-Z]{3})(.*)/;
         const removeAllOrdersRegex = /^([A-Z]+)\Wremoved\Wits\Worders:$/;
-        const finalOrders = {};
+        let finalOrders = {};
 
         for (const [_, orderStr] of Object.entries(orders)) {
             if (orderStr.match(removeAllOrdersRegex)) {
-                finalOrders[orderStr.match(removeAllOrdersRegex)[1]] = [];
+                const power = orderStr.match(removeAllOrdersRegex)[1];
+                finalOrders[power] = {};
             } else if (orderStr.match(removeOrderRegex)) {
                 const power = orderStr.match(removeOrderRegex)[1];
-                const order = orderStr.match(removeOrderRegex)[2];
-                if (finalOrders.hasOwnProperty(power) && finalOrders[power].includes(orderStr)) {
-                    finalOrders[power].splice(finalOrders[power].indexOf(orderStr), 1);
+                const unit = orderStr.match(removeOrderRegex)[2];
+                const unitOrder = orderStr.match(removeOrderRegex)[3];
+                const order = unit + unitOrder;
+
+                if (finalOrders.hasOwnProperty(power) && finalOrders[power].hasOwnProperty(order)) {
+                    delete finalOrders[power][unit];
                 }
             } else if (orderStr.match(addOrderRegex)) {
                 const power = orderStr.match(addOrderRegex)[1];
                 const unit = orderStr.match(addOrderRegex)[2];
                 const unitOrder = orderStr.match(addOrderRegex)[3];
                 const order = unit + unitOrder;
-                let matchFound = false;
 
                 if (!finalOrders.hasOwnProperty(power)) {
-                    finalOrders[power] = [order];
+                    finalOrders[power] = {[unit]: order};
                 } else {
-                    for (const finalOrder of finalOrders[power]) {
-                        if (finalOrder.includes(unit)) {
-                            finalOrders[power].splice(finalOrders[power].indexOf(finalOrder), 1, order);
-                            matchFound = true;
-                        }
-                    }
-                    if (!matchFound) {
-                        // push and sort
-                        finalOrders[power].push(order);
-                        finalOrders[power].sort();
-                    }
+                    finalOrders[power][unit] = order;
                 }
             }
-
         }
-        return finalOrders;
+        
+        // change dict to array
+        let result = {};
+        for (const [power, orders] of Object.entries(finalOrders)) {
+            result[power] = Object.values(orders).sort();
+        }
+        
+        return result;
     }
 
     getMessageOrder() {
