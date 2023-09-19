@@ -909,14 +909,16 @@ export class Game {
                 )) {
                     messageOrderThisPhase.put(message.time_sent, message);
                 }
+
                 for (const [timestamp, order] of Object.entries(
-                    orderAdjustments
+                    orderAdjustmentsThisPhase
                 )) {
-                    messageOrderThisPhase.put(timestamp, order);
+                    messageOrderThisPhase.put(timestamp, { order: order });
                 }
                 messageOrders[phase] = messageOrderThisPhase;
             }
         }
+
         return [initialOrders, messageOrders];
     }
 
@@ -925,27 +927,34 @@ export class Game {
     }
 
     getMessageOrderChannels(role, phase) {
+        console.log("getMessageOrderChannels", role, phase);
         const [_, messageOrders] = this.getMessageOrder();
         const messageChannels = {};
         role = role || this.role;
-        let messagesToShow = messageOrders[phase].values();
+        let messagesToShow = messageOrders[phase] ? messageOrders[phase].values() : {};
         if (!messagesToShow || !messagesToShow.length) return messageChannels;
 
         for (let message of messagesToShow) {
             if (message.hasOwnProperty("message")) {
                 let protagonist = null;
-                if (message.sender === role || message.recipient === "GLOBAL")
+                if (message.sender === role || message.recipient === "GLOBAL") {
                     protagonist = message.recipient;
-                else if (message.recipient === role)
+                } else if (message.recipient === role) {
                     protagonist = message.sender;
-                if (!messageChannels.hasOwnProperty(protagonist))
+                }
+                if (
+                    protagonist !== null &&
+                    !messageChannels.hasOwnProperty(protagonist)
+                )
                     messageChannels[protagonist] = [];
 
                 if (this.annotated_messages.hasOwnProperty(message.time_sent)) {
                     message.recipient_annotation =
                         this.annotated_messages[message.time_sent];
                 }
-                messageChannels[protagonist].push(message);
+                if (protagonist !== null) {
+                    messageChannels[protagonist].push(message);
+                }
             } else {
                 // add to all convos
                 for (let p of [

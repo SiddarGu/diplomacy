@@ -176,9 +176,9 @@ export class ContentGame extends React.Component {
             }
         }
         this.schedule_timeout_id = null;
-        [this.initialPlayerOrders, this.messageOrders] =
-            this.props.data.getMessageOrder();
         this.state = {
+            initialPlayerOrders: this.props.data.getMessageOrder()[0],
+            messageOrders: this.props.data.getMessageOrder()[1],
             tabMain: null,
             tabPastMessages: null,
             tabCurrentMessages: null,
@@ -1317,18 +1317,8 @@ export class ContentGame extends React.Component {
         return render;
     }
 
-    filterMessageOrder(messageOrders, currentPower, protagonist) {
-        const powerRegex = /^([A-Z]+)\W.*/;
-        let filtered = {};
-    }
-
-    renderPastMessages(engine, role) {
-        const { initialEngine, pastPhases, phaseIndex } =
-            this.__get_engine_to_display(engine);
-        const messageChannels = engine.getMessageOrderChannels(
-            role,
-            pastPhases[phaseIndex]
-        );
+    renderPastMessages(engine, role, phase) {
+        const messageChannels = engine.getMessageOrderChannels(role, phase);
 
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
@@ -1363,51 +1353,47 @@ export class ContentGame extends React.Component {
         const renderedMessages = [];
         let protagonist = currentTabId;
 
-        let msgs = messageChannels[protagonist];
+        let msgs = messageChannels[protagonist] || [];
         let sender = "";
         let rec = "";
         let dir = "";
         let curPhase = "";
         let prevPhase = "";
 
-        /* for (let m in msgs) {
-            let msg = msgs[m];
-            sender = msg.sender;
-            rec = msg.recipient;
-            curPhase = msg.phase;
-            if (curPhase !== prevPhase) {
+        for (let msg of msgs) {
+            if (msg.hasOwnProperty("message")) {
+                sender = msg.sender;
+                rec = msg.recipient;
+
+                if (role === sender) dir = "outgoing";
+                if (role === rec) dir = "incoming";
                 renderedMessages.push(
-                    <MessageSeparator>{curPhase}</MessageSeparator>
+                    <ChatMessage
+                        model={{
+                            message: msg.message,
+                            sent: msg.sent_time,
+                            sender: sender,
+                            direction: dir,
+                            position: "single",
+                        }}
+                        avatarPosition={dir === "outgoing" ? "tr" : "tl"}
+                    >
+                        <Avatar
+                            src={POWER_ICONS[sender]}
+                            name={sender}
+                            size="sm"
+                        />
+                    </ChatMessage>
                 );
-                prevPhase = curPhase;
-            }
-
-            if (role === sender) dir = "outgoing";
-            if (role === rec) dir = "incoming";
-            renderedMessages.push(
-                <ChatMessage
-                    model={{
-                        message: msg.message,
-                        sent: msg.sent_time,
-                        sender: sender,
-                        direction: dir,
-                        position: "single",
-                    }}
-                    avatarPosition={dir === "outgoing" ? "tr" : "tl"}
-                >
-                    <Avatar src={POWER_ICONS[sender]} name={sender} size="sm" />
-                </ChatMessage>
-            );
-        } */
-
-        const sortedDict = this.messageOrders[pastPhases[phaseIndex]];
-        console.log(sortedDict.values());
-
-        for (let m of sortedDict.values()) {
-            if (m.hasOwnProperty("message")) {
-                // messages goes here
             } else {
-                // orders goes here
+                const powerRegex = /^([A-Z]+)\W/;
+                const power = msg.order.match(powerRegex)[1];
+
+                if (!msg.order.includes('update') && (power === protagonist || power === role)) {
+                    renderedMessages.push(
+                        <MessageSeparator>{msg.order}</MessageSeparator>
+                    );
+                }
             }
         }
 
@@ -1829,7 +1815,7 @@ export class ContentGame extends React.Component {
         const { engine, pastPhases, phaseIndex } =
             this.__get_engine_to_display(initialEngine);
         const initialPlayerOrdersThisPhase =
-            this.initialPlayerOrders[pastPhases[phaseIndex]];
+            this.state.initialPlayerOrders[pastPhases[phaseIndex]];
         let orders = {};
         let orderResult = null;
         if (engine.order_history.contains(engine.phase))
@@ -2308,7 +2294,11 @@ export class ContentGame extends React.Component {
 
         return pastPhases[phaseIndex] === initialEngine.phase
             ? this.renderCurrentMessages(initialEngine, currentPowerName)
-            : this.renderPastMessages(engine, currentPowerName);
+            : this.renderPastMessages(
+                  engine,
+                  currentPowerName,
+                  pastPhases[phaseIndex]
+              );
     }
 
     // ]
