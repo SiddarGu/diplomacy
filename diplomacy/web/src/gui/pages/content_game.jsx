@@ -1329,8 +1329,6 @@ export class ContentGame extends React.Component {
             currentPowerName,
             phase
         )[0];
-        //<pre>{JSON.stringify(intentObj, null, 2)}</pre>
-        console.log(finalIntents);
 
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
