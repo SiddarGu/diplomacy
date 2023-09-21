@@ -93,7 +93,7 @@ const startofPhaseRegex =
 const messageResponseRegex =
     /^After\WI\Wgot\Wthe\Wmessage\Wfrom\W[A-Z]+,\WI\Wintend\Wto\Wdo:\W\((.*)\)$/;
 const dipccRegex = /^process dipcc game.+/;
-const intentRecordRegex = /^A record of intents in.*$/;
+const intentRecordRegex = /^A record of intents in [A-Z0-9]{6}:\W(\{.*\})$/;
 
 /* Order management in game page.
  * When editing orders locally, we have to compare it to server orders
@@ -1319,6 +1319,18 @@ export class ContentGame extends React.Component {
 
     renderPastMessages(engine, role, phase) {
         const messageChannels = engine.getMessageOrderChannels(role, phase);
+        const logChannels = engine.getLogChannels(role, phase);
+        const controllablePowers = engine.getControllablePowers();
+        const currentPowerName =
+            this.state.power ||
+            (controllablePowers.length && controllablePowers[0]);
+        const finalIntents = this.renderLogs(
+            engine,
+            currentPowerName,
+            phase
+        )[0];
+        //<pre>{JSON.stringify(intentObj, null, 2)}</pre>
+        console.log(finalIntents);
 
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
@@ -1354,47 +1366,94 @@ export class ContentGame extends React.Component {
         let protagonist = currentTabId;
 
         let msgs = messageChannels[protagonist] || [];
+        let logs = logChannels[protagonist] || [];
+        let intent = finalIntents[protagonist] || [];
         let sender = "";
         let rec = "";
         let dir = "";
-        let curPhase = "";
-        let prevPhase = "";
 
         for (let msg of msgs) {
             if (msg.hasOwnProperty("message")) {
                 sender = msg.sender;
                 rec = msg.recipient;
+                const header = logs.shift() || { message: "" };
+                const footer = logs.shift() || { message: "" };
 
                 if (role === sender) dir = "outgoing";
                 if (role === rec) dir = "incoming";
-                renderedMessages.push(
-                    <ChatMessage
-                        model={{
-                            message: msg.message,
-                            sent: msg.sent_time,
-                            sender: sender,
-                            direction: dir,
-                            position: "single",
-                        }}
-                        avatarPosition={dir === "outgoing" ? "tr" : "tl"}
-                    >
-                        <Avatar
-                            src={POWER_ICONS[sender]}
-                            name={sender}
-                            size="sm"
-                        />
-                    </ChatMessage>
-                );
+
+                if (dir === "incoming" && header && header.message.length > 0) {
+                    renderedMessages.push(
+                        <ChatMessage
+                            model={{
+                                sent: msg.sent_time,
+                                sender: sender,
+                                direction: dir,
+                                position: "single",
+                                type: "custom",
+                            }}
+                            avatarPosition={dir === "outgoing" ? "tr" : "tl"}
+                        >
+                            <Avatar
+                                src={POWER_ICONS[sender]}
+                                name={sender}
+                                size="sm"
+                            />
+                            <ChatMessage.CustomContent>
+                                {msg.message}
+                                <br />
+                                <i style={{ color: "gray", fontSize: "12px" }}>
+                                    {header.message}
+                                    <br />
+                                    {footer.message}
+                                </i>
+                            </ChatMessage.CustomContent>
+                        </ChatMessage>
+                    );
+                } else {
+                    renderedMessages.push(
+                        <ChatMessage
+                            model={{
+                                message: msg.message,
+                                sent: msg.sent_time,
+                                sender: sender,
+                                direction: dir,
+                                position: "single",
+                            }}
+                            avatarPosition={dir === "outgoing" ? "tr" : "tl"}
+                        >
+                            <Avatar
+                                src={POWER_ICONS[sender]}
+                                name={sender}
+                                size="sm"
+                            />
+                        </ChatMessage>
+                    );
+                }
             } else {
                 const powerRegex = /^([A-Z]+)\W/;
                 const power = msg.order.match(powerRegex)[1];
 
-                if (!msg.order.includes('update') && (power === protagonist || power === role)) {
+                if (
+                    !msg.order.includes("update") &&
+                    (power === protagonist || power === role)
+                ) {
                     renderedMessages.push(
                         <MessageSeparator>{msg.order}</MessageSeparator>
                     );
                 }
             }
+        }
+
+        for (let log of logs) {
+            renderedMessages.push(
+                <MessageSeparator>{log.message}</MessageSeparator>
+            );
+        }
+
+        if (phase.slice(-1) === "M") {
+            renderedMessages.push(<div>intent record:</div>);
+            renderedMessages.push(<pre>{JSON.stringify(intent, null, 2)}</pre>);
         }
 
         return (
@@ -1910,7 +1969,7 @@ export class ContentGame extends React.Component {
                                         {powerName}
                                     </div>
                                 )}
-                                <div className={"past-power-name col-sm-4"}>
+                                <div className={"col-sm-4"}>
                                     {startIntentions[powerName] &&
                                         startIntentions[powerName].map(
                                             (order, index) => (
@@ -1925,7 +1984,7 @@ export class ContentGame extends React.Component {
                                             powerName
                                         ].map((order) => <div>{order}</div>)}
                                 </div>
-                                <div className={"past-power-orders col-sm-4"}>
+                                <div className={"col-sm-4"}>
                                     {orders[powerName].map((order, index) => (
                                         <div key={index}>
                                             {order}
@@ -2075,107 +2134,32 @@ export class ContentGame extends React.Component {
         );
     }
 
-    renderLogs(engine, role) {
-        const { initialEngine, pastPhases, phaseIndex } =
-            this.__get_engine_to_display(engine);
-
+    renderLogs(engine, role, phase) {
         const curController = engine.powers[role].getController();
         const powerLogs = engine.getLogsForPower(role, true);
         let renderedLogs = [];
         let curPhase = "";
         let prevPhase = "";
-        let ciceroIntentions = "";
 
         powerLogs.forEach((log) => {
-            const internalResponseMatch = log.message.match(
-                internalResponseRegex
-            );
-            const expectPowerToDoMatch =
-                log.message.match(expectPowerToDoRegex);
-            const startOfPhaseMatch = log.message.match(startofPhaseRegex);
-            const messageResponseMatch =
-                log.message.match(messageResponseRegex);
-            const dipccMatch = log.message.match(dipccRegex);
             const intentRecordMatch = log.message.match(intentRecordRegex);
 
-            if (pastPhases[phaseIndex] !== log.phase || startOfPhaseMatch) {
+            if (phase !== log.phase || !intentRecordMatch) {
                 return;
-            }
+            } else {
+                // replace single quotes with double quotes, parentheses with brackets
+                const intentJson = intentRecordMatch[1]
+                    .replace(/'/g, '"')
+                    .replace(/\(/g, "[")
+                    .replace(/\)/g, "]")
+                    .replace(/None/g, "[]");
+                const intentObj = JSON.parse(intentJson);
 
-            if (
-                log.phase !== prevPhase &&
-                log.phase.slice(-1) !== "A" &&
-                log.phase.slice(-1) !== "R"
-            ) {
-                curPhase = log.phase;
-                renderedLogs.push(
-                    <MessageSeparator>{curPhase}</MessageSeparator>
-                );
-
-                prevPhase = curPhase;
-
-                if (startOfPhaseMatch) {
-                    ciceroIntentions = startOfPhaseMatch[1];
-                }
-            }
-
-            // filter out cases where cicero intentions don't change
-            if (
-                messageResponseMatch &&
-                messageResponseMatch[1] === ciceroIntentions
-            ) {
-                return;
-            }
-
-            // filter out internal response and dipcc logs
-            else if (
-                log.phase.slice(-1) !== "A" &&
-                log.phase.slice(-1) !== "R" &&
-                !internalResponseMatch &&
-                !dipccMatch //&&
-            ) {
-                // update cicero intentions
-                if (messageResponseMatch) {
-                    ciceroIntentions = messageResponseMatch[1];
-                }
-
-                renderedLogs.push(
-                    // eslint-disable-next-line react/jsx-key
-                    <ChatMessage
-                        model={{
-                            message: log.message,
-                            sent: log.sent_time,
-                            sender: role,
-                            direction: "outgoing",
-                            position: "single",
-                        }}
-                    >
-                        <ChatMessage.Header sentTime={role + " cicero log"} />
-                    </ChatMessage>
-                );
+                renderedLogs.push(intentObj);
             }
         });
 
-        return (
-            <div className={"col-lg-6 col-md-12"} style={{ height: "500px" }}>
-                <MainContainer responsive>
-                    <ChatContainer>
-                        <ConversationHeader>
-                            <ConversationHeader.Content
-                                userName={
-                                    role.toString() +
-                                    " (" +
-                                    curController +
-                                    ")" +
-                                    "'s Log"
-                                }
-                            />
-                        </ConversationHeader>
-                        <MessageList>{renderedLogs}</MessageList>
-                    </ChatContainer>
-                </MainContainer>
-            </div>
-        );
+        return renderedLogs;
     }
 
     renderOrderSuggestions(orders) {
@@ -2500,10 +2484,7 @@ export class ContentGame extends React.Component {
                     navigation={navigation}
                 />
                 {phasePanel}
-                <Row>
-                    {this.renderTabChat(true, engine, currentPowerName)}
-                    {this.renderLogs(engine, currentPowerName)}
-                </Row>
+                <Row>{this.renderTabChat(true, engine, currentPowerName)}</Row>
             </main>
         );
     }

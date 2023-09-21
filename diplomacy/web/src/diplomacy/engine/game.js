@@ -927,11 +927,12 @@ export class Game {
     }
 
     getMessageOrderChannels(role, phase) {
-        console.log("getMessageOrderChannels", role, phase);
         const [_, messageOrders] = this.getMessageOrder();
         const messageChannels = {};
         role = role || this.role;
-        let messagesToShow = messageOrders[phase] ? messageOrders[phase].values() : {};
+        let messagesToShow = messageOrders[phase]
+            ? messageOrders[phase].values()
+            : {};
         if (!messagesToShow || !messagesToShow.length) return messageChannels;
 
         for (let message of messagesToShow) {
@@ -973,6 +974,36 @@ export class Game {
             }
         }
         return messageChannels;
+    }
+
+    getLogChannels(role, phase) {
+        /* 
+            return the internal states of cicero responding to messages
+        */
+        role = role || this.role;
+        const selfIntention =
+            /^After\WI\Wgot\Wthe\Wmessage\Wfrom\W([A-Z]+),\WI\Wintend\Wto\Wdo:\W\(.*\)$/;
+        const predictedIntention = /^I\Wexpect\W([A-Z]+)\Wto\Wdo:\W.*/;
+
+        const powerLog = this.getLogsForPower(role, true).filter(
+            (log) =>
+                log.phase === phase &&
+                (log.message.match(selfIntention) ||
+                    log.message.match(predictedIntention))
+        );
+
+        let logChannels = {};
+
+        for (const log of powerLog) {
+            const match = log.message.match(selfIntention) || log.message.match(predictedIntention);
+            const protagonist = match[1];
+
+            if (!logChannels.hasOwnProperty(protagonist))
+                logChannels[protagonist] = [];
+            logChannels[protagonist].push(log);
+        }
+
+        return logChannels;
     }
 
     getMessageChannels(role, all) {
