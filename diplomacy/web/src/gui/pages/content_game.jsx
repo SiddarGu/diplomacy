@@ -1365,7 +1365,7 @@ export class ContentGame extends React.Component {
 
         let msgs = messageChannels[protagonist] || [];
         let logs = logChannels[protagonist] || [];
-        let intent = finalIntents[protagonist] || [];
+        let intent = (finalIntents ? finalIntents[protagonist] : []) || [];
         let sender = "";
         let rec = "";
         let dir = "";
@@ -2142,7 +2142,7 @@ export class ContentGame extends React.Component {
         powerLogs.forEach((log) => {
             const intentRecordMatch = log.message.match(intentRecordRegex);
 
-            if (phase !== log.phase || !intentRecordMatch) {
+            if (phase.slice(-1) != 'M' || phase !== log.phase || !intentRecordMatch) {
                 return;
             } else {
                 // replace single quotes with double quotes, parentheses with brackets
@@ -2150,7 +2150,9 @@ export class ContentGame extends React.Component {
                     .replace(/'/g, '"')
                     .replace(/\(/g, "[")
                     .replace(/\)/g, "]")
-                    .replace(/None/g, "[]");
+                    .replace(/None/g, "[]")
+                    .replace(/,\W*]/g, "]");
+                console.log('json: ', intentJson);
                 const intentObj = JSON.parse(intentJson);
 
                 renderedLogs.push(intentObj);
