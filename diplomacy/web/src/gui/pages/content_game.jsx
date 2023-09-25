@@ -87,7 +87,7 @@ const POWER_ICONS = {
 const HotKey = require("react-shortcut");
 
 const internalResponseRegex = /^My\W\(internal\)\Wresponse\Wis\: .*/;
-const expectPowerToDoRegex = /^I\Wexpect\W[A-Z]+\Wto\Wdo:\W.*/;
+const expectPowerToDoRegex = /^I\Wexpect\W([A-Z]+)\Wto\Wdo:\W.*/;
 const startofPhaseRegex =
     /^At\Wthe\Wstart\Wof\Wthis\Wphase,\WI\Wintend\Wto\Wdo\:\W\((.*)\)$/;
 const messageResponseRegex =
@@ -1317,18 +1317,93 @@ export class ContentGame extends React.Component {
         return render;
     }
 
-    renderPastMessages(engine, role, phase) {
-        const messageChannels = engine.getMessageOrderChannels(role, phase);
-        const logChannels = engine.getLogChannels(role, phase);
+    getPowerPhaseStartIntent(engine, powerName, phase) {
+        const powerLogs = engine.getLogsForPower(powerName, true);
+        let results = null;
+
+        powerLogs.forEach((log) => {
+            if (phase !== log.phase || log.phase.slice(-1) !== "M") {
+                return;
+            }
+
+            const startOfPhaseMatch = log.message.match(startofPhaseRegex);
+
+            if (startOfPhaseMatch) {
+                const startOrders = startOfPhaseMatch[1]
+                    .split(", ")
+                    .map((order) => {
+                        return order.replace(/['"]+/g, "");
+                    })
+                    .sort();
+
+                results = startOrders;
+            }
+        });
+        return results;
+    }
+
+    renderIntents(engine, phase) {
+        if (phase.slice(-1) !== "M") {
+            return <div></div>;
+        }
+
         const controllablePowers = engine.getControllablePowers();
         const currentPowerName =
             this.state.power ||
             (controllablePowers.length && controllablePowers[0]);
+
         const finalIntents = this.renderLogs(
             engine,
             currentPowerName,
             phase
         )[0];
+        const logs = engine
+            .getLogsForPower(currentPowerName, true)
+            .filter((log) => log.phase === phase);
+
+        let selfIntent = this.getPowerPhaseStartIntent(
+            engine,
+            currentPowerName,
+            phase
+        );
+        let intentHistory = [selfIntent];
+
+        const selfIntentLogs = logs.filter((log) =>
+            log.message.match(messageResponseRegex)
+        );
+        const expectationLogs = logs.filter((log) =>
+            log.message.match(expectPowerToDoRegex)
+        );
+
+        for (const log of selfIntentLogs) {
+            const newIntent = log.message
+                .match(messageResponseRegex)[1]
+                .split(", ")
+                .map((order) => {
+                    return order.replace(/['"]+/g, "");
+                })
+                .sort();
+
+            for (const order of newIntent) {
+                if (!selfIntent.includes(order)) {
+                    selfIntent = newIntent;
+                    intentHistory.push(log.message);
+                }
+            }
+        }
+
+        // div with half the width of the page
+        return (<div style={{ width: "50%" }}>
+            <div>intent history:</div>
+            {intentHistory.map((intent) => (
+                <div>{intent}</div>
+            ))}
+            <pre>{JSON.stringify(finalIntents, null, 2)}</pre>
+        </div>);
+    }
+
+    renderPastMessages(engine, role, phase) {
+        const messageChannels = engine.getMessageOrderChannels(role, phase);
 
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
@@ -1364,8 +1439,6 @@ export class ContentGame extends React.Component {
         let protagonist = currentTabId;
 
         let msgs = messageChannels[protagonist] || [];
-        let logs = logChannels[protagonist] || [];
-        let intent = (finalIntents ? finalIntents[protagonist] : []) || [];
         let sender = "";
         let rec = "";
         let dir = "";
@@ -1378,18 +1451,18 @@ export class ContentGame extends React.Component {
             }
 
             if (msg.time_sent in this.state.annotatedMessages) {
-                footerMessage += `recipient: ${this.state.annotatedMessages[msg.time_sent]}`;
+                footerMessage += `recipient: ${
+                    this.state.annotatedMessages[msg.time_sent]
+                }`;
             }
             if (msg.hasOwnProperty("message")) {
                 sender = msg.sender;
                 rec = msg.recipient;
-                const header = logs.shift() || { message: "" };
-                const footer = logs.shift() || { message: "" };
 
                 if (role === sender) dir = "outgoing";
                 if (role === rec) dir = "incoming";
 
-                if (dir === "incoming" && header && header.message.length > 0) {
+                if (dir === "incoming") {
                     renderedMessages.push(
                         <ChatMessage
                             model={{
@@ -1408,16 +1481,15 @@ export class ContentGame extends React.Component {
                             />
                             <ChatMessage.CustomContent>
                                 {msg.message}
-                                <br />
+                                {/* <br />
                                 <i style={{ color: "gray", fontSize: "12px" }}>
                                     {header.message}
                                     <br />
                                     {footer.message}
-                                </i>
+                                </i> */}
                             </ChatMessage.CustomContent>
-                            
+
                             <ChatMessage.Footer sentTime={footerMessage} />
-                            
                         </ChatMessage>
                     );
                 } else {
@@ -1454,17 +1526,6 @@ export class ContentGame extends React.Component {
                     );
                 }
             }
-        }
-
-        for (let log of logs) {
-            renderedMessages.push(
-                <MessageSeparator>{log.message}</MessageSeparator>
-            );
-        }
-
-        if (phase.slice(-1) === "M") {
-            renderedMessages.push(<div>intent record:</div>);
-            renderedMessages.push(<pre>{JSON.stringify(intent, null, 2)}</pre>);
         }
 
         return (
@@ -1909,30 +1970,15 @@ export class ContentGame extends React.Component {
 
         for (const power_idx in powerNames) {
             const power = powerNames[power_idx];
-            const powerLogs = initialEngine.getLogsForPower(power, true);
-            powerLogs.forEach((log) => {
-                const startOfPhaseMatch = log.message.match(startofPhaseRegex);
 
-                if (pastPhases[phaseIndex] !== log.phase) {
-                    return;
-                }
-
-                if (
-                    log.phase.slice(-1) !== "A" &&
-                    log.phase.slice(-1) !== "R"
-                ) {
-                    if (startOfPhaseMatch) {
-                        const startOrders = startOfPhaseMatch[1]
-                            .split(", ")
-                            .map((order) => {
-                                return order.replace(/['"]+/g, "");
-                            })
-                            .sort();
-                        startIntentions[power] = startOrders;
-                    }
-                }
-            });
+            startIntentions[power] = this.getPowerPhaseStartIntent(
+                initialEngine,
+                power,
+                pastPhases[phaseIndex]
+            );
         }
+
+        console.log("startIntentions", startIntentions);
 
         const getOrderResult = (order) => {
             if (orderResult) {
@@ -2155,7 +2201,11 @@ export class ContentGame extends React.Component {
         powerLogs.forEach((log) => {
             const intentRecordMatch = log.message.match(intentRecordRegex);
 
-            if (phase.slice(-1) != 'M' || phase !== log.phase || !intentRecordMatch) {
+            if (
+                phase.slice(-1) != "M" ||
+                phase !== log.phase ||
+                !intentRecordMatch
+            ) {
                 return;
             } else {
                 // replace single quotes with double quotes, parentheses with brackets
@@ -2165,7 +2215,7 @@ export class ContentGame extends React.Component {
                     .replace(/\)/g, "]")
                     .replace(/None/g, "[]")
                     .replace(/,\W*]/g, "]");
-                console.log('json: ', intentJson);
+                console.log("json: ", intentJson);
                 const intentObj = JSON.parse(intentJson);
 
                 renderedLogs.push(intentObj);
@@ -2497,7 +2547,9 @@ export class ContentGame extends React.Component {
                     navigation={navigation}
                 />
                 {phasePanel}
-                <Row>{this.renderTabChat(true, engine, currentPowerName)}</Row>
+                <Row>{this.renderTabChat(true, engine, currentPowerName)}
+                    {this.renderIntents(engine, pastPhases[phaseIndex])}
+                </Row>
             </main>
         );
     }
