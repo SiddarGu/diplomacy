@@ -1371,6 +1371,15 @@ export class ContentGame extends React.Component {
         let dir = "";
 
         for (let msg of msgs) {
+            let footerMessage = "";
+
+            if (msg.truth) {
+                footerMessage += `sender: ${msg.truth} `;
+            }
+
+            if (msg.time_sent in this.state.annotatedMessages) {
+                footerMessage += `recipient: ${this.state.annotatedMessages[msg.time_sent]}`;
+            }
             if (msg.hasOwnProperty("message")) {
                 sender = msg.sender;
                 rec = msg.recipient;
@@ -1406,6 +1415,9 @@ export class ContentGame extends React.Component {
                                     {footer.message}
                                 </i>
                             </ChatMessage.CustomContent>
+                            
+                            <ChatMessage.Footer sentTime={footerMessage} />
+                            
                         </ChatMessage>
                     );
                 } else {
@@ -1425,6 +1437,7 @@ export class ContentGame extends React.Component {
                                 name={sender}
                                 size="sm"
                             />
+                            <ChatMessage.Footer sentTime={footerMessage} />
                         </ChatMessage>
                     );
                 }
