@@ -981,26 +981,35 @@ export class Game {
             return the internal states of cicero responding to messages
         */
         role = role || this.role;
-        const selfIntention =
-            /^After\WI\Wgot\Wthe\Wmessage\Wfrom\W([A-Z]+),\WI\Wintend\Wto\Wdo:\W\(.*\)$/;
-        const predictedIntention = /^I\Wexpect\W([A-Z]+)\Wto\Wdo:\W.*/;
+        const intention =
+            /^After I got the message \(prev msg time_sent: (\w+)\) from ([A-Z]+), I intend to do: \((.*)\)\.\W+I expect [A-Z]+ to do: \((.*)\)\. My \(internal\) response is:/;
 
         const powerLog = this.getLogsForPower(role, true).filter(
             (log) =>
                 log.phase === phase &&
-                (log.message.match(selfIntention) ||
-                    log.message.match(predictedIntention))
+                (log.message.match(intention))
         );
 
         let logChannels = {};
 
         for (const log of powerLog) {
-            const match = log.message.match(selfIntention) || log.message.match(predictedIntention);
-            const protagonist = match[1];
+            const match =
+                log.message.match(intention);
+            const timeSent = match[1] === "None" ? undefined : parseInt(match[1]);
+            const protagonist = match[2];
+            const selfIntent = match[3].split(", ");
+            const selfExpect = match[4].split(", ");
+
+            console.log("intent", selfIntent, "expect", selfExpect);
 
             if (!logChannels.hasOwnProperty(protagonist))
                 logChannels[protagonist] = [];
-            logChannels[protagonist].push(log);
+            logChannels[protagonist].push({
+                ...log,
+                message_timestamp: timeSent,
+                intent: selfIntent,
+                expect: selfExpect,
+            });
         }
 
         return logChannels;

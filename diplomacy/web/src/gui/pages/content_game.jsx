@@ -1330,6 +1330,9 @@ export class ContentGame extends React.Component {
             phase
         )[0];
 
+        console.log('messageChannels', messageChannels);
+        console.log('logChannels', logChannels);
+
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
             if (powerName !== role) tabNames.push(powerName);
