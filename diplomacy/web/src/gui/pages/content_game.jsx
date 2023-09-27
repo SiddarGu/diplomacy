@@ -1319,7 +1319,7 @@ export class ContentGame extends React.Component {
 
     getPowerPhaseStartIntent(engine, powerName, phase) {
         const powerLogs = engine.getLogsForPower(powerName, true);
-        let results = null;
+        let results = [];
 
         powerLogs.forEach((log) => {
             if (phase !== log.phase || log.phase.slice(-1) !== "M") {
@@ -1367,7 +1367,7 @@ export class ContentGame extends React.Component {
             phase
         ).map((order) => {
             return <li>{order}</li>;   
-        });
+        }) || [];
         let initialIntent = <ul>{selfIntent}</ul>
         let intentHistory = [initialIntent];
         let expectations = {};
