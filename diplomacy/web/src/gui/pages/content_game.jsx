@@ -87,7 +87,7 @@ const POWER_ICONS = {
 const HotKey = require("react-shortcut");
 
 const internalResponseRegex = /^My\W\(internal\)\Wresponse\Wis\: .*/;
-const expectPowerToDoRegex = /^I\Wexpect\W([A-Z]+)\Wto\Wdo:\W.*/;
+const expectPowerToDoRegex = /^I\Wexpect\W([A-Z]+)\Wto\Wdo:\W\((.*)\)/;
 const startofPhaseRegex =
     /^At\Wthe\Wstart\Wof\Wthis\Wphase,\WI\Wintend\Wto\Wdo\:\W\((.*)\)$/;
 const messageResponseRegex =
@@ -1365,8 +1365,12 @@ export class ContentGame extends React.Component {
             engine,
             currentPowerName,
             phase
-        );
-        let intentHistory = [selfIntent];
+        ).map((order) => {
+            return <li>{order}</li>;   
+        });
+        let initialIntent = <ul>{selfIntent}</ul>
+        let intentHistory = [initialIntent];
+        let expectations = {};
 
         const selfIntentLogs = logs.filter((log) =>
             log.message.match(messageResponseRegex)
@@ -1374,6 +1378,25 @@ export class ContentGame extends React.Component {
         const expectationLogs = logs.filter((log) =>
             log.message.match(expectPowerToDoRegex)
         );
+
+        for (const log of expectationLogs) {
+            const matched = log.message.match(expectPowerToDoRegex);
+            const power = matched[1];
+            const orders = matched[2].split(", ").map((order) => {
+                return order.replace(/['"]+/g, "");
+            }).sort().toString();
+
+            // check if power in expectations
+            if (!expectations.hasOwnProperty(power)) {
+                expectations[power] = [orders];
+            }
+            // otherwise push only if not equal to the last order
+            else if (expectations[power][expectations[power].length - 1] !== orders) {
+                expectations[power].push(orders);
+            }
+        }
+
+        console.log("expectations", expectations);
 
         for (const log of selfIntentLogs) {
             const newIntent = log.message
@@ -1392,13 +1415,13 @@ export class ContentGame extends React.Component {
             }
         }
 
-        // div with half the width of the page
         return (<div style={{ width: "50%" }}>
-            <div>intent history:</div>
+            <ul>
             {intentHistory.map((intent) => (
-                <div>{intent}</div>
+                <li>{intent}</li>
             ))}
-            <pre>{JSON.stringify(finalIntents, null, 2)}</pre>
+            {/* <pre>{JSON.stringify(finalIntents, null, 2)}</pre> */}
+            </ul>
         </div>);
     }
 
