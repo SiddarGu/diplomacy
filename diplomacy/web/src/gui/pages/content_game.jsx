@@ -1362,12 +1362,15 @@ export class ContentGame extends React.Component {
             .filter((log) => log.phase === phase);
 
         let selfIntent =
-            this.getPowerPhaseStartIntent(engine, currentPowerName, phase) || [];
-        let initialIntent = <ul>{selfIntent.map(
-            (order) => {
-                return <li>{order}</li>;
-            }
-        )}</ul>;
+            this.getPowerPhaseStartIntent(engine, currentPowerName, phase) ||
+            [];
+        let initialIntent = (
+            <ul>
+                {selfIntent.map((order) => {
+                    return <li>{order}</li>;
+                })}
+            </ul>
+        );
         let intentHistory = [initialIntent];
         let expectations = {};
         const intentionRegex =
@@ -1427,14 +1430,18 @@ export class ContentGame extends React.Component {
                         currentPowerName,
                         timeSent
                     );
-                    const formattedMessage =
-                        timeSent && correspondingMessage
-                            ? `After ${protagonist} said: "${
-                                  correspondingMessage.message
-                              }" in ${correspondingMessage.phase}, I intend to do: ${selfIntention.toString()}`
-                            : undefined;
-                    if (formattedMessage) {
+
+                    if (timeSent && correspondingMessage) {
+                        const formattedMessage = `After ${protagonist} said: "${correspondingMessage.message}" in ${correspondingMessage.phase}, I intend to do:`;
                         intentHistory.push(formattedMessage);
+                        const selfIntentionInList = (
+                            <ul>
+                                {selfIntention.map((order) => {
+                                    return <li>{order}</li>;
+                                })}
+                            </ul>
+                        );
+                        intentHistory.push(selfIntentionInList);
                     }
                 }
             }
