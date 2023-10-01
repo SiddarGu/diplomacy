@@ -1361,19 +1361,20 @@ export class ContentGame extends React.Component {
             .getLogsForPower(currentPowerName, true)
             .filter((log) => log.phase === phase);
 
-        let selfIntent = this.getPowerPhaseStartIntent(
-            engine,
-            currentPowerName,
-            phase
-        ).map((order) => {
-            return <li>{order}</li>;   
-        }) || [];
-        let initialIntent = <ul>{selfIntent}</ul>
+        let selfIntent =
+            this.getPowerPhaseStartIntent(engine, currentPowerName, phase) || [];
+        let initialIntent = <ul>{selfIntent.map(
+            (order) => {
+                return <li>{order}</li>;
+            }
+        )}</ul>;
         let intentHistory = [initialIntent];
         let expectations = {};
+        const intentionRegex =
+            /^After I got the message \(prev msg time_sent: (\w+)\) from ([A-Z]+), I intend to do: \((.*)\)\.\W+I expect [A-Z]+ to do: \((.*)\)\. My \(internal\) response is:/;
 
         const selfIntentLogs = logs.filter((log) =>
-            log.message.match(messageResponseRegex)
+            log.message.match(intentionRegex)
         );
         const expectationLogs = logs.filter((log) =>
             log.message.match(expectPowerToDoRegex)
@@ -1382,25 +1383,29 @@ export class ContentGame extends React.Component {
         for (const log of expectationLogs) {
             const matched = log.message.match(expectPowerToDoRegex);
             const power = matched[1];
-            const orders = matched[2].split(", ").map((order) => {
-                return order.replace(/['"]+/g, "");
-            }).sort().toString();
+            const orders = matched[2]
+                .split(", ")
+                .map((order) => {
+                    return order.replace(/['"]+/g, "");
+                })
+                .sort()
+                .toString();
 
             // check if power in expectations
             if (!expectations.hasOwnProperty(power)) {
                 expectations[power] = [orders];
             }
             // otherwise push only if not equal to the last order
-            else if (expectations[power][expectations[power].length - 1] !== orders) {
+            else if (
+                expectations[power][expectations[power].length - 1] !== orders
+            ) {
                 expectations[power].push(orders);
             }
         }
 
-        console.log("expectations", expectations);
-
         for (const log of selfIntentLogs) {
             const newIntent = log.message
-                .match(messageResponseRegex)[1]
+                .match(intentionRegex)[3]
                 .split(", ")
                 .map((order) => {
                     return order.replace(/['"]+/g, "");
@@ -1410,26 +1415,61 @@ export class ContentGame extends React.Component {
             for (const order of newIntent) {
                 if (!selfIntent.includes(order)) {
                     selfIntent = newIntent;
-                    intentHistory.push(log.message);
+
+                    const match = log.message.match(intentionRegex);
+                    const timeSent =
+                        match[1] === "None" ? undefined : parseInt(match[1]);
+                    const protagonist = match[2];
+                    const selfIntention = match[3].split(", ").sort();
+                    const selfExpect = match[4].split(", ").sort();
+                    const correspondingMessage = this.getMessageByTimeSent(
+                        engine,
+                        currentPowerName,
+                        timeSent
+                    );
+                    const formattedMessage =
+                        timeSent && correspondingMessage
+                            ? `After ${protagonist} said: "${
+                                  correspondingMessage.message
+                              }" in ${correspondingMessage.phase}, I intend to do: ${selfIntention.toString()}`
+                            : undefined;
+                    if (formattedMessage) {
+                        intentHistory.push(formattedMessage);
+                    }
                 }
             }
         }
 
-        return (<div style={{ width: "50%" }}>
-            <ul>
-            {intentHistory.map((intent) => (
-                <li>{intent}</li>
-            ))}
-            {/* <pre>{JSON.stringify(finalIntents, null, 2)}</pre> */}
-            </ul>
-        </div>);
+        return (
+            <div style={{ width: "50%" }}>
+                <ul>
+                    {intentHistory.map((intent) => (
+                        <li>{intent}</li>
+                    ))}
+                    {/* <pre>{JSON.stringify(finalIntents, null, 2)}</pre> */}
+                </ul>
+            </div>
+        );
+    }
+
+    getMessageByTimeSent(engine, role, timeSent) {
+        const messageChannels = engine.getMessageChannels(role, true);
+
+        for (const power in messageChannels) {
+            const msgs = messageChannels[power];
+
+            for (const msg of msgs) {
+                if (msg.time_sent === timeSent) {
+                    return msg;
+                }
+            }
+        }
+
+        return null;
     }
 
     renderPastMessages(engine, role, phase) {
         const messageChannels = engine.getMessageOrderChannels(role, phase);
-
-        console.log('messageChannels', messageChannels);
-        console.log('logChannels', logChannels);
 
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
@@ -2004,8 +2044,6 @@ export class ContentGame extends React.Component {
             );
         }
 
-        console.log("startIntentions", startIntentions);
-
         const getOrderResult = (order) => {
             if (orderResult) {
                 const pieces = order.split(/ +/);
@@ -2241,7 +2279,6 @@ export class ContentGame extends React.Component {
                     .replace(/\)/g, "]")
                     .replace(/None/g, "[]")
                     .replace(/,\W*]/g, "]");
-                console.log("json: ", intentJson);
                 const intentObj = JSON.parse(intentJson);
 
                 renderedLogs.push(intentObj);
@@ -2573,7 +2610,8 @@ export class ContentGame extends React.Component {
                     navigation={navigation}
                 />
                 {phasePanel}
-                <Row>{this.renderTabChat(true, engine, currentPowerName)}
+                <Row>
+                    {this.renderTabChat(true, engine, currentPowerName)}
                     {this.renderIntents(engine, pastPhases[phaseIndex])}
                 </Row>
             </main>
