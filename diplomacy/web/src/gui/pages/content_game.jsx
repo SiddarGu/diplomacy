@@ -1374,7 +1374,7 @@ export class ContentGame extends React.Component {
         let intentHistory = [initialIntent];
         let expectations = {};
         const intentionRegex =
-            /^After I got the message \(prev msg time_sent: (\w+)\) from ([A-Z]+), I intend to do: \((.*)\)\.\W+I expect [A-Z]+ to do: \((.*)\)\. My \(internal\) response is:/;
+            /^After I got the message \(prev msg time_sent: (\w+)\) from ([A-Z]+), I intend to do: \((.*)\)\.\W+I expect [A-Z]+ to do: \((.*)\)\./;
 
         const selfIntentLogs = logs.filter((log) =>
             log.message.match(intentionRegex)
@@ -1423,8 +1423,12 @@ export class ContentGame extends React.Component {
                     const timeSent =
                         match[1] === "None" ? undefined : parseInt(match[1]);
                     const protagonist = match[2];
-                    const selfIntention = match[3].split(", ").sort();
-                    const selfExpect = match[4].split(", ").sort();
+                    const selfIntention = match[3]
+                        .split(", ")
+                        .map((order) => {
+                            return order.replace(/['"]+/g, "");
+                        })
+                        .sort();
                     const correspondingMessage = this.getMessageByTimeSent(
                         engine,
                         currentPowerName,
@@ -1442,6 +1446,17 @@ export class ContentGame extends React.Component {
                             </ul>
                         );
                         intentHistory.push(selfIntentionInList);
+                    } else {
+                        // if no corresponding message, just add the intent
+                        const formattedMessage = `Even ${protagonist} didn't reply, I updated my intent to:`;
+                        intentHistory.push(formattedMessage);
+                        const selfIntentionInList = (
+                            <ul>
+                                {selfIntention.map((order) => {
+                                    return <li>{order}</li>;
+                                })}
+                            </ul>
+                        );
                     }
                 }
             }
