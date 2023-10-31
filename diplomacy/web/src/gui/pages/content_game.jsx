@@ -1635,7 +1635,7 @@ export class ContentGame extends React.Component {
     }
 
     renderCurrentMessages(engine, role) {
-        const messageChannels = engine.getMessageChannels(role, false);
+        const messageChannels = engine.getMessageChannels(role, true);
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
             if (powerName !== role) tabNames.push(powerName);
