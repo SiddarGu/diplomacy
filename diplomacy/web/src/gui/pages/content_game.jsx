@@ -1539,9 +1539,13 @@ export class ContentGame extends React.Component {
             }
 
             if (msg.time_sent in this.state.annotatedMessages) {
-                footerMessage += `recipient: ${
-                    this.state.annotatedMessages[msg.time_sent]
-                }`;
+                const msgAnnotation =
+                    this.state.annotatedMessages[msg.time_sent];
+                if (msgAnnotation === "yes" || msgAnnotation === "True") {
+                    footerMessage += `recipient: lie `;
+                } else {
+                    footerMessage += `recipient: truth `;
+                }
             }
             if (msg.hasOwnProperty("message")) {
                 sender = msg.sender;
@@ -1729,9 +1733,12 @@ export class ContentGame extends React.Component {
                                         this.state.annotatedMessages.hasOwnProperty(
                                             msg.time_sent
                                         ) &&
-                                        this.state.annotatedMessages[
+                                        (this.state.annotatedMessages[
                                             msg.time_sent
-                                        ] === "yes"
+                                        ] === "yes" ||
+                                            this.state.annotatedMessages[
+                                                msg.time_sent
+                                            ] === "True")
                                     }
                                     onClick={() => {
                                         this.handleRecipientAnnotation(
@@ -1754,9 +1761,14 @@ export class ContentGame extends React.Component {
                                         this.state.annotatedMessages.hasOwnProperty(
                                             msg.time_sent
                                         ) &&
-                                        this.state.annotatedMessages[
-                                            msg.time_sent
-                                        ] === "None"
+                                        !(
+                                            this.state.annotatedMessages[
+                                                msg.time_sent
+                                            ] === "yes" ||
+                                            this.state.annotatedMessages[
+                                                msg.time_sent
+                                            ] === "True"
+                                        )
                                     }
                                     onClick={() =>
                                         this.handleRecipientAnnotation(
@@ -2091,6 +2103,9 @@ export class ContentGame extends React.Component {
             return "";
         };
 
+        const humans = engine.getHumanPlayers();
+        console.log(humans);
+
         const orderView = [
             //this.__form_phases(pastPhases, phaseIndex),
             (countOrders && (
@@ -2100,10 +2115,7 @@ export class ContentGame extends React.Component {
                             ""
                         ) : (
                             <div key={powerName} className={"row"}>
-                                {initialPlayerOrdersThisPhase &&
-                                initialPlayerOrdersThisPhase.hasOwnProperty(
-                                    powerName
-                                ) ? (
+                                {humans.includes(powerName) ? (
                                     <div className={"past-power-name col-sm-2"}>
                                         {powerName} (human)
                                     </div>

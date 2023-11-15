@@ -181,19 +181,43 @@ export class Game {
         this.phase = gameData.phase_abbr || null; // phase abbreviation
 
         this.powers = {};
+        this.humans = [];
+
         if (gameData.powers) {
             for (let entry of Object.entries(gameData.powers)) {
                 const power_name = entry[0];
                 const powerState = entry[1];
+                let isCicero = false;
+
                 if (powerState instanceof Power) {
                     this.powers[power_name] = powerState.copy();
+                    
+                    
+                    for (let controller of powerState.getControllers()) {
+                        if (controller.includes('cicero')) {
+                            isCicero = true;
+                        }
+                    }
+                    
                 } else {
-                    this.powers[power_name] = new Power(
+                    const newPower =  new Power(
                         power_name,
                         this.isPlayerGame() ? power_name : this.role,
                         this
                     );
+                    this.powers[power_name] = newPower;
                     this.powers[power_name].setState(powerState);
+                    
+                    
+                    for (let controller of newPower.getControllers()) {
+                        if (controller.includes('cicero')) {
+                            isCicero = true;
+                        }
+                    }
+                }
+
+                if (!isCicero) {
+                    this.humans.push(power_name);
                 }
 
                 const stances = gameData.stances[power_name];
@@ -926,6 +950,10 @@ export class Game {
         return this.annotated_messages;
     }
 
+    getHumanPlayers() {
+        return this.humans;
+    }
+
     getMessageOrderChannels(role, phase) {
         const [_, messageOrders] = this.getMessageOrder();
         const messageChannels = {};
@@ -999,8 +1027,6 @@ export class Game {
             const protagonist = match[2];
             const selfIntent = match[3].split(", ");
             const selfExpect = match[4].split(", ");
-
-            console.log("intent", selfIntent, "expect", selfExpect);
 
             if (!logChannels.hasOwnProperty(protagonist))
                 logChannels[protagonist] = [];

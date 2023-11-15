@@ -66,6 +66,10 @@ export class Power {
         return(res);
     }
 
+    getControllers() {
+        return this.controller.values();
+    }
+
     isEliminated() {
         return !(this.units.length || this.centers.length || Object.keys(this.retreats).length);
     }
