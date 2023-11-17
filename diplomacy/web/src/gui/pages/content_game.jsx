@@ -86,13 +86,15 @@ const POWER_ICONS = {
 
 const HotKey = require("react-shortcut");
 
-const internalResponseRegex = /^My\W\(internal\)\Wresponse\Wis\: .*/;
+// ignore the following regexes
+const internalRegex = /^My \(internal\) response is\:.*/;
+const truthRegex = /^A truth to Cicero\:.*/;
+const dipccRegex = /^process dipcc game.+/;
+
+// regular ones
 const expectPowerToDoRegex = /^I\Wexpect\W([A-Z]+)\Wto\Wdo:\W\((.*)\)/;
 const startofPhaseRegex =
     /^At\Wthe\Wstart\Wof\Wthis\Wphase,\WI\Wintend\Wto\Wdo\:\W\((.*)\)$/;
-const messageResponseRegex =
-    /^After\WI\Wgot\Wthe\Wmessage\Wfrom\W[A-Z]+,\WI\Wintend\Wto\Wdo:\W\((.*)\)$/;
-const dipccRegex = /^process dipcc game.+/;
 const intentRecordRegex = /^A record of intents in [A-Z0-9]{6}:\W(\{.*\})$/;
 
 /* Order management in game page.
@@ -1359,7 +1361,13 @@ export class ContentGame extends React.Component {
         )[0];
         const logs = engine
             .getLogsForPower(currentPowerName, true)
-            .filter((log) => log.phase === phase);
+            .filter((log) => log.phase === phase)
+            .filter(
+                (log) =>
+                    !log.message.match(internalRegex) &&
+                    !log.message.match(truthRegex) &&
+                    !log.message.match(dipccRegex)
+            );
 
         let selfIntent =
             this.getPowerPhaseStartIntent(engine, currentPowerName, phase) ||
@@ -1373,12 +1381,24 @@ export class ContentGame extends React.Component {
         );
         let intentHistory = [initialIntent];
         let expectations = {};
+
+        const messageResponseRegex =
+            /^After\WI\Wgot\Wthe\Wmessage\Wfrom\W([A-Z]+),\WI\Wintend\Wto\Wdo:\W\((.*)\)$/;
         const intentionRegex =
             /^After I got the message \(prev msg time_sent: (\w+)\) from ([A-Z]+), I intend to do: \((.*)\)\.\W+I expect [A-Z]+ to do: \((.*)\)\./;
+        const intentresponseRegex =
+            /^After I got the message \(prev msg time_sent: (\w+)\) from ([A-Z]+).\W+My response is(.*)\WI intend to do: \((.*)\)\.\W+I expect [A-Z]+ to do: \((.*)\)\./;
 
-        const selfIntentLogs = logs.filter((log) =>
-            log.message.match(intentionRegex)
-        );
+        function isIntention(log) {
+            return (
+                log.message.match(intentionRegex) ||
+                log.message.match(messageResponseRegex) ||
+                log.message.match(intentresponseRegex)
+            );
+        }
+
+        const selfIntentLogs = logs.filter(isIntention);
+
         const expectationLogs = logs.filter((log) =>
             log.message.match(expectPowerToDoRegex)
         );
@@ -1407,8 +1427,31 @@ export class ContentGame extends React.Component {
         }
 
         for (const log of selfIntentLogs) {
-            const newIntent = log.message
-                .match(intentionRegex)[3]
+            let timeSent = null;
+            let sender = null;
+            let response = null; // currently not useful
+            let newMoves = null;
+
+            if (log.message.match(messageResponseRegex)) {
+                const match = log.message.match(messageResponseRegex);
+                sender = match[1];
+                newMoves = match[2];
+            } else if (log.message.match(intentresponseRegex)) {
+                const match = log.message.match(intentresponseRegex);
+                timeSent = parseInt(match[1]);
+                sender = match[2];
+                response = match[3];
+                newMoves = match[4];
+                // expect sender to do is currently ignored
+            } else if (log.message.match(intentionRegex)) {
+                const match = log.message.match(intentionRegex);
+                timeSent = parseInt(match[1]);
+                sender = match[2];
+                newMoves = match[3];
+                // expect sender to do is currently ignored
+            }
+
+            const newIntent = newMoves
                 .split(", ")
                 .map((order) => {
                     return order.replace(/['"]+/g, "");
@@ -1419,28 +1462,21 @@ export class ContentGame extends React.Component {
                 if (!selfIntent.includes(order)) {
                     selfIntent = newIntent;
 
-                    const match = log.message.match(intentionRegex);
-                    const timeSent =
-                        match[1] === "None" ? undefined : parseInt(match[1]);
-                    const protagonist = match[2];
-                    const selfIntention = match[3]
-                        .split(", ")
-                        .map((order) => {
-                            return order.replace(/['"]+/g, "");
-                        })
-                        .sort();
-                    const correspondingMessage = this.getMessageByTimeSent(
-                        engine,
-                        currentPowerName,
-                        timeSent
-                    );
+                    const correspondingMessage =
+                        timeSent !== null
+                            ? this.getMessageByTimeSent(
+                                  engine,
+                                  currentPowerName,
+                                  timeSent
+                              )
+                            : null;
 
                     if (timeSent && correspondingMessage) {
-                        const formattedMessage = `After ${protagonist} said: "${correspondingMessage.message}" in ${correspondingMessage.phase}, I intend to do:`;
+                        const formattedMessage = `After ${sender} said: "${correspondingMessage.message}" in ${correspondingMessage.phase}, I intend to do:`;
                         intentHistory.push(formattedMessage);
                         const selfIntentionInList = (
                             <ul>
-                                {selfIntention.map((order) => {
+                                {newIntent.map((order) => {
                                     return <li>{order}</li>;
                                 })}
                             </ul>
@@ -1448,15 +1484,16 @@ export class ContentGame extends React.Component {
                         intentHistory.push(selfIntentionInList);
                     } else {
                         // if no corresponding message, just add the intent
-                        const formattedMessage = `Even ${protagonist} didn't reply, I updated my intent to:`;
+                        const formattedMessage = `(Can't retrieve message from ${sender}) I updated my intent to:`;
                         intentHistory.push(formattedMessage);
                         const selfIntentionInList = (
                             <ul>
-                                {selfIntention.map((order) => {
+                                {newIntent.map((order) => {
                                     return <li>{order}</li>;
                                 })}
                             </ul>
                         );
+                        intentHistory.push(selfIntentionInList);
                     }
                 }
             }
@@ -2104,7 +2141,6 @@ export class ContentGame extends React.Component {
         };
 
         const humans = engine.getHumanPlayers();
-        console.log(humans);
 
         const orderView = [
             //this.__form_phases(pastPhases, phaseIndex),
