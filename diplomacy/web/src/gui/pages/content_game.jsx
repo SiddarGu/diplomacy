@@ -1334,7 +1334,7 @@ export class ContentGame extends React.Component {
                 const startOrders = startOfPhaseMatch[1]
                     .split(", ")
                     .map((order) => {
-                        return order.replace(/['"]+/g, "");
+                        return order.replace(/['",]+/g, "");
                     })
                     .sort();
 
@@ -1409,7 +1409,7 @@ export class ContentGame extends React.Component {
             const orders = matched[2]
                 .split(", ")
                 .map((order) => {
-                    return order.replace(/['"]+/g, "");
+                    return order.replace(/['",]+/g, "");
                 })
                 .sort()
                 .toString();
@@ -1454,7 +1454,7 @@ export class ContentGame extends React.Component {
             const newIntent = newMoves
                 .split(", ")
                 .map((order) => {
-                    return order.replace(/['"]+/g, "");
+                    return order.replace(/['",]+/g, "");
                 })
                 .sort();
 
@@ -2162,6 +2162,35 @@ export class ContentGame extends React.Component {
                                 )}
                                 <div className={"col-sm-4"}>
                                     {startIntentions[powerName] &&
+                                    startIntentions[powerName]
+                                        .sort()
+                                        .join(",") !==
+                                        orders[powerName].sort().join(",") ? (
+                                        startIntentions[powerName].map(
+                                            (order, index) => (
+                                                <div key={index}>{order}</div>
+                                            )
+                                        )
+                                    ) : (
+                                        <div></div>
+                                    )}
+
+                                    {initialPlayerOrdersThisPhase &&
+                                    initialPlayerOrdersThisPhase.hasOwnProperty(
+                                        powerName
+                                    ) &&
+                                    initialPlayerOrdersThisPhase[powerName]
+                                        .sort()
+                                        .join(",") !==
+                                        orders[powerName].sort().join(",") ? (
+                                        initialPlayerOrdersThisPhase[
+                                            powerName
+                                        ].map((order) => <div>{order}</div>)
+                                    ) : (
+                                        <div></div>
+                                    )}
+
+                                    {/* {startIntentions[powerName] &&
                                         startIntentions[powerName].map(
                                             (order, index) => (
                                                 <div key={index}>{order}</div>
@@ -2173,7 +2202,7 @@ export class ContentGame extends React.Component {
                                         ) &&
                                         initialPlayerOrdersThisPhase[
                                             powerName
-                                        ].map((order) => <div>{order}</div>)}
+                                        ].map((order) => <div>{order}</div>)} */}
                                 </div>
                                 <div className={"col-sm-4"}>
                                     {orders[powerName].map((order, index) => (
