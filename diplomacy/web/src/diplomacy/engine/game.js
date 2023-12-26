@@ -909,6 +909,7 @@ export class Game {
                     firstMessageTimestampThisPhase;
 
                 for (const [timestamp, log] of Object.entries(logs)) {
+                    if (log.startsWith("omniscient_type")) continue;
                     const power = log.match(powerRegex)[1];
                     if (
                         parseInt(timestamp) <=
