@@ -1733,10 +1733,10 @@ class Game(Jsonable):
         self.state_history.put(previous_phase, previous_state)
         self.log_history.put(previous_phase, previous_logs)
         # load the stances to history
-        self.stance_history[previous_phase] = previous_stances
-        self.is_bot_history[previous_phase] = previous_is_bot
-        self.deceiving_history[previous_phase] = previous_deceiving
-        self.order_log_history[previous_phase] = previous_order_logs
+        self.stance_history.put(previous_phase,previous_stances)
+        self.is_bot_history.put(previous_phase,previous_is_bot)
+        self.deceiving_history.put(previous_phase,previous_deceiving)
+        self.order_log_history.put(previous_phase,previous_order_logs)
 
         # Set empty orders for unorderable powers.
         # JAD: commenting the following if statement. This block will automatically set
