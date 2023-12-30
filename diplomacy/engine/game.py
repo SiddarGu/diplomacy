@@ -864,9 +864,9 @@ class Game(Jsonable):
         self.log_history.put(phase, game_phase_data.logs)
         self.order_history.put(phase, game_phase_data.orders)
         self.result_history.put(phase, game_phase_data.results)
-        self.stance_history[phase] = game_phase_data.stances
-        self.is_bot[phase] = game_phase_data.is_bot
-        self.deceiving[phase] = game_phase_data.deceiving
+        self.stance_history.put(phase,game_phase_data.stances)
+        self.is_bot.put(phase,game_phase_data.is_bot)
+        self.deceiving.put(phase,game_phase_data.deceiving)
         self.order_log_history.put(phase, game_phase_data.order_logs)
 
     def set_status(self, status):
@@ -918,9 +918,9 @@ class Game(Jsonable):
         self.log_history.put(previous_phase, previous_logs)
         self.state_history.put(previous_phase, previous_state)
         self.result_history.put(previous_phase, {})
-        self.stance_history[previous_phase] = previous_stance
-        self.is_bot_history[previous_phase] = previous_is_bot
-        self.deceiving_history[previous_phase] = previous_deceiving
+        self.stance_history.put(previous_phase,previous_stance)
+        self.is_bot_history.put(previous_phase,previous_is_bot)
+        self.deceiving_history.put(previous_phase,previous_deceiving)
         self.order_log_history.put(previous_phase, previous_order_logs)
 
         # There are no expected results for orders, as there are no orders processed.
