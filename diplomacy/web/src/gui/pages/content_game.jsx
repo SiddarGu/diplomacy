@@ -1346,9 +1346,10 @@ export class ContentGame extends React.Component {
     }
 
     renderPastMessages(engine, role, isWide) {
-        const messageChannels = this.filterMessages(
+        const messageChannels = engine.getMessageChannels(role, true);
+        const filteredMessageChannels = this.filterMessages(
             engine,
-            engine.getMessageChannels(role, true)
+            messageChannels
         );
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
@@ -1389,7 +1390,7 @@ export class ContentGame extends React.Component {
         const renderedMessages = [];
         let protagonist = currentTabId;
 
-        let msgs = messageChannels[protagonist];
+        let msgs = filteredMessageChannels[protagonist];
         let sender = "";
         let rec = "";
         let dir = "";
@@ -1530,9 +1531,11 @@ export class ContentGame extends React.Component {
             this.state.power ||
             (controllablePowers.length ? controllablePowers[0] : null);
 
-        const messageChannels = this.filterMessages(
+        const messageChannels = engine.getMessageChannels(role, true);
+
+        const filteredMessageChannels = this.filterMessages(
             engine,
-            engine.getMessageChannels(role, true)
+            messageChannels
         );
         const tabNames = [];
         for (let powerName of Object.keys(engine.powers))
@@ -1581,7 +1584,7 @@ export class ContentGame extends React.Component {
         let renderedMessages = [];
         let protagonist = currentTabId;
 
-        let msgs = messageChannels[protagonist];
+        let msgs = filteredMessageChannels[protagonist];
         let sender = "";
         let rec = "";
         let dir = "";
