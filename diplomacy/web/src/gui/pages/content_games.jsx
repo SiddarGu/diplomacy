@@ -127,7 +127,7 @@ export class ContentGames extends React.Component {
         const gamesFound = this.props.gamesFound;
         myGames.sort((a, b) => b.timestamp_created - a.timestamp_created);
         gamesFound.sort((a, b) => b.timestamp_created - a.timestamp_created);
-        const tab = this.state.tab ? this.state.tab : (myGames.length ? 'my-games' : 'find');
+        const tab = this.state.tab ? this.state.tab : ('my-games');
         return (
             <main>
                 <Helmet>
