@@ -348,23 +348,6 @@ export class Page extends React.Component {
         return (
             <PageContext.Provider value={this}>
                 <div className="page container-fluid" id={this.state.contentName}>
-                    <div className={'top-msg row'}>
-                        <div title={successMessage !== '-' ? successMessage : ''}
-                             className={'col-sm-4 msg success ' + (this.state.success ? 'with-msg' : 'no-msg')}
-                             onClick={() => this.success()}>
-                            {successMessage}
-                        </div>
-                        <div title={infoMessage !== '-' ? infoMessage : ''}
-                             className={'col-sm-4 msg info ' + (this.state.info ? 'with-msg' : 'no-msg')}
-                             onClick={() => this.info()}>
-                            {infoMessage}
-                        </div>
-                        <div title={errorMessage !== '-' ? errorMessage : ''}
-                             className={'col-sm-4 msg error ' + (this.state.error ? 'with-msg' : 'no-msg')}
-                             onClick={() => this.error()}>
-                            {errorMessage}
-                        </div>
-                    </div>
                     {this.state.body || Page.defaultPage()}
                 </div>
             </PageContext.Provider>

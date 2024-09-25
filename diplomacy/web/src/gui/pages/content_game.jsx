@@ -1549,7 +1549,6 @@ export class ContentGame extends React.Component {
     renderPastMessages(engine, role, phase, isWide) {
         const messageChannels = engine.getMessageOrderChannels(role, phase);
         //<pre>{JSON.stringify(intentObj, null, 2)}</pre>
-        console.log(finalIntents);
         const filteredMessageChannels = this.blurMessages(
             engine,
             messageChannels
@@ -3352,7 +3351,7 @@ export class ContentGame extends React.Component {
             this.__get_engine_to_display(engine);
         let phasePanel;
         if (pastPhases[phaseIndex] === engine.phase) {
-            if (hasTabCurrentPhase) {
+            /* if (hasTabCurrentPhase) {
                 phasePanel = this.renderTabCurrentPhase(
                     true,
                     engine,
@@ -3362,7 +3361,8 @@ export class ContentGame extends React.Component {
                     currentPowerName,
                     false
                 );
-            } else if (hasTabPhaseHistory) {
+            } else if (hasTabPhaseHistory) { */
+            if (hasTabPhaseHistory) {
                 phasePanel = this.renderTabResults(true, engine);
             }
         } else {
@@ -3415,8 +3415,7 @@ export class ContentGame extends React.Component {
                         <Row>
                             {!engine.isPlayerGame() &&
                                 this.renderPowerInfo(engine)}
-                            {localStorage.getItem("username") === "admin" &&
-                                this.renderLogs(engine, currentPowerName)}
+                            
                         </Row>
                     </div>
                 );
@@ -3436,6 +3435,7 @@ export class ContentGame extends React.Component {
                                 currentPowerName,
                                 false
                             )}
+                            {this.renderIntents(engine, pastPhases[phaseIndex])}
                             {this.renderTabCentaurMessages(
                                 true,
                                 engine,
@@ -3446,8 +3446,7 @@ export class ContentGame extends React.Component {
                         <Row>
                             {!engine.isPlayerGame() &&
                                 this.renderPowerInfo(engine)}
-                            {localStorage.getItem("username") === "admin" &&
-                                this.renderLogs(engine, currentPowerName)}
+                            
                         </Row>
                     </div>
                 );
@@ -3472,8 +3471,7 @@ export class ContentGame extends React.Component {
                     </Row>
                     <Row>
                         {!engine.isPlayerGame() && this.renderPowerInfo(engine)}
-                        {localStorage.getItem("username") === "admin" &&
-                            this.renderLogs(engine, currentPowerName)}
+                        
                     </Row>
                 </div>
             );

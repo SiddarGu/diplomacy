@@ -97,6 +97,7 @@ export class Game {
             parseInt
         );
         this.annotated_messages = gameData.annotated_messages || {};
+        this.order_log_history = gameData.order_log_history || {};
         this.hasInitialOrders = gameData.has_initial_orders
             ? gameData.has_initial_orders
             : {};
@@ -181,33 +182,40 @@ export class Game {
 
         this.powers = {};
         this.humans = [];
+
         if (gameData.powers) {
             for (let entry of Object.entries(gameData.powers)) {
                 const power_name = entry[0];
                 const powerState = entry[1];
                 let isCicero = false;
+
                 if (powerState instanceof Power) {
                     this.powers[power_name] = powerState.copy();
-
+                    
+                    
                     for (let controller of powerState.getControllers()) {
-                        if (controller.includes("cicero")) {
+                        if (controller.includes('cicero')) {
                             isCicero = true;
                         }
                     }
+                    
                 } else {
-                    const newPower = new Power(
+                    const newPower =  new Power(
                         power_name,
                         this.isPlayerGame() ? power_name : this.role,
                         this
                     );
                     this.powers[power_name] = newPower;
                     this.powers[power_name].setState(powerState);
+                    
+                    
                     for (let controller of newPower.getControllers()) {
-                        if (controller.includes("cicero")) {
+                        if (controller.includes('cicero')) {
                             isCicero = true;
                         }
                     }
                 }
+
                 if (!isCicero) {
                     this.humans.push(power_name);
                 }
@@ -420,7 +428,7 @@ export class Game {
     }
 
     addDeceiving(controlledPower, targetPower, deceiving) {
-        //console.log('addDeceiving', controlledPower, targetPower, deceiving)
+        console.log("addDeceiving", controlledPower, targetPower, deceiving);
     }
 
     getInitialOrders(power) {
@@ -813,11 +821,13 @@ export class Game {
     getOrderLogs() {
         return this.order_log_history;
     }
+
     simplifyOrders(orders) {
         const addOrderRegex = /^([A-Z]+)\Wadded:\W([A-Z]\W[A-Z]{3})(.*)$/;
         const removeOrderRegex = /^([A-Z]+)\Wremoved:\W([A-Z]\W[A-Z]{3})(.*)/;
         const removeAllOrdersRegex = /^([A-Z]+)\Wremoved\Wits\Worders:$/;
         let finalOrders = {};
+
         for (const [_, orderStr] of Object.entries(orders)) {
             if (orderStr.match(removeAllOrdersRegex)) {
                 const power = orderStr.match(removeAllOrdersRegex)[1];
@@ -827,6 +837,7 @@ export class Game {
                 const unit = orderStr.match(removeOrderRegex)[2];
                 const unitOrder = orderStr.match(removeOrderRegex)[3];
                 const order = unit + unitOrder;
+
                 if (
                     finalOrders.hasOwnProperty(power) &&
                     finalOrders[power].hasOwnProperty(order)
@@ -838,6 +849,7 @@ export class Game {
                 const unit = orderStr.match(addOrderRegex)[2];
                 const unitOrder = orderStr.match(addOrderRegex)[3];
                 const order = unit + unitOrder;
+
                 if (!finalOrders.hasOwnProperty(power)) {
                     finalOrders[power] = { [unit]: order };
                 } else {
@@ -845,6 +857,8 @@ export class Game {
                 }
             }
         }
+
+        // change dict to array
         let result = {};
         for (const [power, orders] of Object.entries(finalOrders)) {
             result[power] = Object.values(orders).sort();
@@ -852,15 +866,18 @@ export class Game {
 
         return result;
     }
+
     getMessageOrder() {
         const orderLogs = this.getOrderLogs();
         const messageHistory = this.message_history;
         const powerRegex = /^([A-Z]+)\W/;
+
         let initialOrders = {};
         let messageOrders = {};
         let firstMessageTimestampDict = {};
         let initialOrderLogs = {};
         let orderAdjustments = {};
+
         for (const [phase, logs] of Object.entries(orderLogs)) {
             if (
                 phase.slice(-1) === "M" &&
@@ -870,11 +887,13 @@ export class Game {
                 let firstMessageTimestampThisPhase = {};
                 let initialOrderLogsThisPhase = {};
                 let orderAdjustmentsThisPhase = {};
+
                 messageHistory
                     .get(phase)
                     .values()
                     .map((message) => {
                         const sender = message.sender;
+
                         if (!firstMessageTimestampThisPhase[sender]) {
                             firstMessageTimestampThisPhase[sender] =
                                 message.time_sent;
@@ -888,6 +907,7 @@ export class Game {
                     });
                 firstMessageTimestampDict[phase] =
                     firstMessageTimestampThisPhase;
+
                 for (const [timestamp, log] of Object.entries(logs)) {
                     if (log.startsWith("omniscient_type")) continue;
                     const power = log.match(powerRegex)[1];
@@ -902,15 +922,19 @@ export class Game {
                 }
                 initialOrderLogs[phase] = initialOrderLogsThisPhase;
                 orderAdjustments[phase] = orderAdjustmentsThisPhase;
+
                 initialOrders[phase] = this.simplifyOrders(
                     initialOrderLogs[phase]
                 );
+
                 let messageOrderThisPhase = new SortedDict(null, parseInt);
+
                 for (const [_, message] of Object.entries(
                     messageHistory.get(phase).values()
                 )) {
                     messageOrderThisPhase.put(message.time_sent, message);
                 }
+
                 for (const [timestamp, order] of Object.entries(
                     orderAdjustmentsThisPhase
                 )) {
@@ -919,6 +943,7 @@ export class Game {
                 messageOrders[phase] = messageOrderThisPhase;
             }
         }
+
         return [initialOrders, messageOrders];
     }
 
@@ -938,6 +963,7 @@ export class Game {
             ? messageOrders[phase].values()
             : {};
         if (!messagesToShow || !messagesToShow.length) return messageChannels;
+
         for (let message of messagesToShow) {
             if (message.hasOwnProperty("message")) {
                 let protagonist = null;
@@ -951,6 +977,7 @@ export class Game {
                     !messageChannels.hasOwnProperty(protagonist)
                 )
                     messageChannels[protagonist] = [];
+
                 if (this.annotated_messages.hasOwnProperty(message.time_sent)) {
                     message.recipient_annotation =
                         this.annotated_messages[message.time_sent];
@@ -980,23 +1007,28 @@ export class Game {
 
     getLogChannels(role, phase) {
         /* 
-          return the internal states of cicero responding to messages
-      */
+            return the internal states of cicero responding to messages
+        */
         role = role || this.role;
         const intention =
             /^After I got the message \(prev msg time_sent: (\w+)\) from ([A-Z]+), I intend to do: \((.*)\)\.\W+I expect [A-Z]+ to do: \((.*)\)\. My \(internal\) response is:/;
+
         const powerLog = this.getLogsForPower(role, true).filter(
-            (log) => log.phase === phase && log.message.match(intention)
+            (log) =>
+                log.phase === phase &&
+                (log.message.match(intention))
         );
+
         let logChannels = {};
+
         for (const log of powerLog) {
-            const match = log.message.match(intention);
-            const timeSent =
-                match[1] === "None" ? undefined : parseInt(match[1]);
+            const match =
+                log.message.match(intention);
+            const timeSent = match[1] === "None" ? undefined : parseInt(match[1]);
             const protagonist = match[2];
             const selfIntent = match[3].split(", ");
             const selfExpect = match[4].split(", ");
-            console.log("intent", selfIntent, "expect", selfExpect);
+
             if (!logChannels.hasOwnProperty(protagonist))
                 logChannels[protagonist] = [];
             logChannels[protagonist].push({
@@ -1006,6 +1038,7 @@ export class Game {
                 expect: selfExpect,
             });
         }
+
         return logChannels;
     }
 
@@ -1025,6 +1058,7 @@ export class Game {
             else if (this.message_history.contains(this.phase))
                 messagesToShow = this.message_history.get(this.phase);
         }
+        if (!messagesToShow || !messagesToShow.length) return messageChannels;
         for (let messages of messagesToShow) {
             for (let message of messages.values()) {
                 let protagonist = null;
