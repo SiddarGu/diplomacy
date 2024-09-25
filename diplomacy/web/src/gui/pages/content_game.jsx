@@ -1838,7 +1838,7 @@ export class ContentGame extends React.Component {
         let renderedMessages = [];
         let protagonist = currentTabId;
 
-        let msgs = filteredMessageChannels[protagonist];
+        let msgs = messageChannels[protagonist];
         let sender = "";
         let rec = "";
         let dir = "";
@@ -1850,9 +1850,7 @@ export class ContentGame extends React.Component {
             sender = msg.sender;
             rec = msg.recipient;
             curPhase = msg.phase;
-            const html = msg.show
-                ? msg.message
-                : `<div style='color: transparent; text-shadow: 0 0 5px rgba(0, 0, 0, 0.5)'>${msg.message}</div>`;
+            const html = msg.message;
 
             if (curPhase !== prevPhase) {
                 renderedMessages.push(
@@ -2232,7 +2230,7 @@ export class ContentGame extends React.Component {
         );
     }
 
-    renderTabResults(toDisplay, initialEngine) {
+    renderTabResults(toDisplay, initialEngine, isWide) {
         const { engine, pastPhases, phaseIndex } =
             this.__get_engine_to_display(initialEngine);
 
@@ -2291,7 +2289,6 @@ export class ContentGame extends React.Component {
         };
 
         const humans = engine.getHumanPlayers();
-        console.log(humans);
 
         const orderView = [
             //this.__form_phases(pastPhases, phaseIndex),
@@ -2372,10 +2369,25 @@ export class ContentGame extends React.Component {
             ),
         ];
 
+        const resultMap = (
+            <div className={isWide ? "col-6" : "col-4"}>
+                {this.state.historyCurrentOrders && (
+                    <div className={"history-current-orders"}>
+                        {this.state.historyCurrentOrders.join(", ")}
+                    </div>
+                )}
+                {this.renderMapForResults(engine, this.state.historyShowOrders)}
+            </div>
+        );
+
+        const resultOrder = <div className={isWide ? "col-6" : "col-4"}>{orderView}</div>;
+
+        return [resultMap, resultOrder];
+
         return (
             <Tab id={"tab-phase-history"} display={toDisplay}>
                 <Row>
-                    <div className={"col-xl"}>
+                    <div className={"col-4"}>
                         {this.state.historyCurrentOrders && (
                             <div className={"history-current-orders"}>
                                 {this.state.historyCurrentOrders.join(", ")}
@@ -3349,25 +3361,6 @@ export class ContentGame extends React.Component {
 
         const { engineCur, pastPhases, phaseIndex } =
             this.__get_engine_to_display(engine);
-        let phasePanel;
-        if (pastPhases[phaseIndex] === engine.phase) {
-            /* if (hasTabCurrentPhase) {
-                phasePanel = this.renderTabCurrentPhase(
-                    true,
-                    engine,
-                    currentPowerName,
-                    orderBuildingType,
-                    this.state.orderBuildingPath,
-                    currentPowerName,
-                    false
-                );
-            } else if (hasTabPhaseHistory) { */
-            if (hasTabPhaseHistory) {
-                phasePanel = this.renderTabResults(true, engine);
-            }
-        } else {
-            phasePanel = this.renderTabResults(true, engine);
-        }
 
         const messageChannels = engine.getMessageChannels(
             currentPowerName,
@@ -3383,99 +3376,55 @@ export class ContentGame extends React.Component {
                 (msg.message.includes("2") || msg.message.includes("3"))
         );
 
-        let gameContent;
+        let phasePanel = hasMoveSuggestion
+            ? this.renderTabResults(true, engine, false)
+            : this.renderTabResults(true, engine, true);
 
-        if (hasTabCurrentPhase) {
-            if (hasMoveSuggestion) {
-                gameContent = (
-                    <div>
-                        <Row>
-                            {phasePanel}
-                            {this.renderTabCentaur(
+        let gameContent = (
+            <div>
+                <Tab id={"tab-phase-history"} display={true}>
+                    <Row>
+                        {phasePanel[0]}
+                        {phasePanel[1]}
+                        {hasMoveSuggestion &&
+                            this.renderTabCentaur(
                                 true,
                                 engine,
                                 currentPowerName
                             )}
-                        </Row>
-                        <Row className={"mb-4"}>
-                            {this.renderTabChat(
-                                true,
-                                engine,
-                                currentPowerName,
-                                false
-                            )}
-                            {this.renderIntents(engine, pastPhases[phaseIndex])}
-                            {this.renderTabCentaurMessages(
-                                true,
-                                engine,
-                                currentPowerName,
-                                false
-                            )}
-                        </Row>
-                        <Row>
-                            {!engine.isPlayerGame() &&
-                                this.renderPowerInfo(engine)}
-                            
-                        </Row>
-                    </div>
-                );
-            } else {
-                gameContent = (
-                    <div>
-                        <Row>{phasePanel}</Row>
-                        <Row>
-                            {this.renderTabCentaur(
-                                true,
-                                engine,
-                                currentPowerName
-                            )}
-                            {this.renderTabChat(
-                                true,
-                                engine,
-                                currentPowerName,
-                                false
-                            )}
-                            {this.renderIntents(engine, pastPhases[phaseIndex])}
-                            {this.renderTabCentaurMessages(
-                                true,
-                                engine,
-                                currentPowerName,
-                                false
-                            )}
-                        </Row>
-                        <Row>
-                            {!engine.isPlayerGame() &&
-                                this.renderPowerInfo(engine)}
-                            
-                        </Row>
-                    </div>
-                );
-            }
-        } else {
-            gameContent = (
-                <div>
-                    {phasePanel}
-                    <Row>
-                        {this.renderTabChat(
-                            true,
-                            engine,
-                            currentPowerName,
-                            true
-                        )}
-                        {this.renderTabCentaurMessages(
-                            true,
-                            engine,
-                            currentPowerName,
-                            true
-                        )}
                     </Row>
-                    <Row>
-                        {!engine.isPlayerGame() && this.renderPowerInfo(engine)}
-                        
-                    </Row>
-                </div>
-            );
-        }
+
+                    <HotKey
+                        keys={["arrowleft"]}
+                        onKeysCoincide={this.onDecrementPastPhase}
+                    />
+
+                    <HotKey
+                        keys={["arrowright"]}
+                        onKeysCoincide={this.onIncrementPastPhase}
+                    />
+
+                    <HotKey
+                        keys={["home"]}
+                        onKeysCoincide={this.displayFirstPastPhase}
+                    />
+
+                    <HotKey
+                        keys={["end"]}
+                        onKeysCoincide={this.displayLastPastPhase}
+                    />
+                </Tab>
+                <Row>
+                    {this.renderTabChat(true, engine, currentPowerName, true)}
+                    {this.renderTabCentaurMessages(
+                        true,
+                        engine,
+                        currentPowerName,
+                        true
+                    )}
+                </Row>
+            </div>
+        );
 
         return (
             <main>
