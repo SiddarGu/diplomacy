@@ -710,7 +710,7 @@ export class ContentGame extends React.Component {
                 "Will not update stance of a noncontrollable power."
             );
         }
-    };
+    }
 
     handleIsBot(country, isBot) {
         const engine = this.props.data;
@@ -727,7 +727,7 @@ export class ContentGame extends React.Component {
                 "Will not update stance of a noncontrollable power."
             );
         }
-    };
+    }
 
     sendOrderLog(networkGame, logType, order) {
         const engine = networkGame.local;
@@ -765,7 +765,7 @@ export class ContentGame extends React.Component {
             message.time_sent,
             annotation
         );
-    };
+    }
 
     updateTabVal(event, value) {
         return this.setState({ tabVal: value });
@@ -1624,11 +1624,7 @@ export class ContentGame extends React.Component {
                 }}
                 key={protagonist}
                 name={protagonist}
-                unreadCnt={this.countUnreadMessages(
-                    engine,
-                    role,
-                    protagonist
-                )}
+                unreadCnt={this.countUnreadMessages(engine, role, protagonist)}
                 unreadDot={this.hasUnreadAdvice(engine, role, protagonist)}
             >
                 <Avatar
@@ -1800,159 +1796,112 @@ export class ContentGame extends React.Component {
             >
                 <Grid container spacing={2}>
                     <Grid item xs={12} sx={{ height: "100%" }}>
-                        <Box sx={{ width: "100%", height: "550px" }}>
-                            <Box
-                                sx={{ borderBottom: 1, borderColor: "divider" }}
-                            >
-                                <Tabs2
-                                    value={this.state.tabVal}
-                                    onChange={this.updateTabVal}
-                                    aria-label="basic tabs example"
-                                >
-                                    <Tab2 label="Messages" />
-                                    <Tab2 label="Captain's Log" />
-                                </Tabs2>
-                            </Box>
-                            {this.state.tabVal === 0 && (
-                                <div>
-                                    <MainContainer responsive>
-                                        <Sidebar position="left" scrollable={true}>
-                                            <ConversationList>{convList}</ConversationList>
-                                        </Sidebar>
-                                        <ChatContainer>
-                                            <MessageList>{renderedMessages}</MessageList>
-                                        </ChatContainer>
-                                    </MainContainer>
-                                    {engine.isPlayerGame() && (
-                                        <>
-                                            <textarea
-                                                style={{ flex: 1 }}
-                                                onChange={(val) =>
-                                                    this.setMessageInputValue(val.target.value)
-                                                }
-                                                value={this.state.message}
-                                                disabled={
-                                                    phaseType === "M" &&
-                                                    (!this.state.hasInitialOrders ||
-                                                        (this.__get_orders(engine)[
-                                                            currentPowerName
-                                                        ] &&
-                                                            Object.keys(
-                                                                this.__get_orders(engine)[
-                                                                    currentPowerName
-                                                                ]
-                                                            ).length <
-                                                                engine.orderableLocations[
-                                                                    currentPowerName
-                                                                ].length))
-                                                }
-                                                placeholder={
-                                                    phaseType === "M" &&
-                                                    (!this.state.hasInitialOrders ||
-                                                        (this.__get_orders(engine)[
-                                                            currentPowerName
-                                                        ] &&
-                                                            Object.keys(
-                                                                this.__get_orders(engine)[
-                                                                    currentPowerName
-                                                                ]
-                                                            ).length <
-                                                                engine.orderableLocations[
-                                                                    currentPowerName
-                                                                ].length))
-                                                        ? "You need to set orders for all units before sending messages."
-                                                        : ""
-                                                }
-                                            />
-                                            <Button
-                                                key={"t"}
-                                                pickEvent={true}
-                                                title={"Truth"}
-                                                color={"success"}
-                                                onClick={() => {
-                                                    this.sendMessage(
-                                                        engine.client,
-                                                        currentTabId,
-                                                        this.state.message,
-                                                        "Truth"
-                                                    );
-                                                    this.setMessageInputValue("");
-                                                }}
-                                            ></Button>
-                                            <Button
-                                                key={"f"}
-                                                pickEvent={true}
-                                                title={"Lie"}
-                                                color={"danger"}
-                                                onClick={() => {
-                                                    this.sendMessage(
-                                                        engine.client,
-                                                        currentTabId,
-                                                        this.state.message,
-                                                        "Lie"
-                                                    );
-                                                    this.setMessageInputValue("");
-                                                }}
-                                            ></Button>
-                                            <Button
-                                                key={"n"}
-                                                pickEvent={true}
-                                                title={"Neutral"}
-                                                color={"primary"}
-                                                onClick={() => {
-                                                    this.sendMessage(
-                                                        engine.client,
-                                                        currentTabId,
-                                                        this.state.message,
-                                                        "Neutral"
-                                                    );
-                                                    this.setMessageInputValue("");
-                                                }}
-                                            ></Button>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-
-                            {this.state.tabVal === 1 && (
+                            <div>
                                 <MainContainer responsive>
+                                    <Sidebar position="left" scrollable={true}>
+                                        <ConversationList>
+                                            {convList}
+                                        </ConversationList>
+                                    </Sidebar>
                                     <ChatContainer>
-                                        <ConversationHeader>
-                                            <ConversationHeader.Content
-                                                userName={
-                                                    role.toString() +
-                                                    " (" +
-                                                    curController +
-                                                    ")" +
-                                                    ": Captain's Log"
-                                                }
-                                            />
-                                        </ConversationHeader>
                                         <MessageList>
-                                            {renderedLogs}
+                                            {renderedMessages}
                                         </MessageList>
-                                        {engine.isPlayerGame() && (
-                                            <MessageInput
-                                                attachButton={false}
-                                                onChange={(val) =>
-                                                    this.setlogDataInputValue(
-                                                        val
-                                                    )
-                                                }
-                                                onSend={() => {
-                                                    const message =
-                                                        this.sendLogData(
-                                                            engine.client,
-                                                            this.state.logData
-                                                        );
-                                                    //this.setLogs([...this.state.logs, message])
-                                                }}
-                                            />
-                                        )}
                                     </ChatContainer>
                                 </MainContainer>
-                            )}
-                        </Box>
+                                {engine.isPlayerGame() && (
+                                    <>
+                                        <textarea
+                                            style={{ flex: 1 }}
+                                            onChange={(val) =>
+                                                this.setMessageInputValue(
+                                                    val.target.value
+                                                )
+                                            }
+                                            value={this.state.message}
+                                            disabled={
+                                                phaseType === "M" &&
+                                                (!this.state.hasInitialOrders ||
+                                                    (this.__get_orders(engine)[
+                                                        currentPowerName
+                                                    ] &&
+                                                        Object.keys(
+                                                            this.__get_orders(
+                                                                engine
+                                                            )[currentPowerName]
+                                                        ).length <
+                                                            engine
+                                                                .orderableLocations[
+                                                                currentPowerName
+                                                            ].length))
+                                            }
+                                            placeholder={
+                                                phaseType === "M" &&
+                                                (!this.state.hasInitialOrders ||
+                                                    (this.__get_orders(engine)[
+                                                        currentPowerName
+                                                    ] &&
+                                                        Object.keys(
+                                                            this.__get_orders(
+                                                                engine
+                                                            )[currentPowerName]
+                                                        ).length <
+                                                            engine
+                                                                .orderableLocations[
+                                                                currentPowerName
+                                                            ].length))
+                                                    ? "You need to set orders for all units before sending messages."
+                                                    : ""
+                                            }
+                                        />
+                                        <Button
+                                            key={"t"}
+                                            pickEvent={true}
+                                            title={"Truth"}
+                                            color={"success"}
+                                            onClick={() => {
+                                                this.sendMessage(
+                                                    engine.client,
+                                                    currentTabId,
+                                                    this.state.message,
+                                                    "Truth"
+                                                );
+                                                this.setMessageInputValue("");
+                                            }}
+                                        ></Button>
+                                        <Button
+                                            key={"f"}
+                                            pickEvent={true}
+                                            title={"Lie"}
+                                            color={"danger"}
+                                            onClick={() => {
+                                                this.sendMessage(
+                                                    engine.client,
+                                                    currentTabId,
+                                                    this.state.message,
+                                                    "Lie"
+                                                );
+                                                this.setMessageInputValue("");
+                                            }}
+                                        ></Button>
+                                        <Button
+                                            key={"n"}
+                                            pickEvent={true}
+                                            title={"Neutral"}
+                                            color={"primary"}
+                                            onClick={() => {
+                                                this.sendMessage(
+                                                    engine.client,
+                                                    currentTabId,
+                                                    this.state.message,
+                                                    "Neutral"
+                                                );
+                                                this.setMessageInputValue("");
+                                            }}
+                                        ></Button>
+                                    </>
+                                )}
+                            </div>
                     </Grid>
                 </Grid>
             </Box>
@@ -2929,8 +2878,7 @@ export class ContentGame extends React.Component {
                 </div>
             </div>
         ) : (
-            <div >
-            </div>
+            <div></div>
         );
     }
 
