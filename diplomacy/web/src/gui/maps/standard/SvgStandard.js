@@ -21,12 +21,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import './SvgStandard.css';
 import {Coordinates, SymbolSizes, Colors} from "./SvgStandardMetadata";
-import {getClickedID, parseLocation, setInfluence} from "../common/common";
+import {getClickedID, parseLocation, setInfluence, setInfluenceLightBackground} from "../common/common";
 import {Game} from "../../../diplomacy/engine/game";
 import {MapData} from "../../utils/map_data";
 import {UTILS} from "../../../diplomacy/utils/utils";
 import {Diplog} from "../../../diplomacy/utils/diplog";
-import {extendOrderBuilding, ProvinceCheck} from "../../utils/order_building";
+import {extendOrderBuilding, ProvinceCheck, POSSIBLE_ORDERS} from "../../utils/order_building";
 import {Unit} from "../common/unit";
 import {Hold} from "../common/hold";
 import {Move} from "../common/move";
@@ -35,7 +35,6 @@ import {SupportHold} from "../common/supportHold";
 import {Convoy} from "../common/convoy";
 import {Build} from "../common/build";
 import {Disband} from "../common/disband";
-
 
 
 export class SvgStandard extends React.Component { 
@@ -52,6 +51,7 @@ export class SvgStandard extends React.Component {
         return this.handleHoverID(getClickedID(event)); 
     }
 
+
     onPrediction(orderBuilding, province){
         /**
          * Update predictions for displaying the order distribution in the selected province
@@ -59,36 +59,43 @@ export class SvgStandard extends React.Component {
         const localGame = this.props.game; //Game Object
         const phaseType = localGame.phase.slice(-1); // 'M'/'A'/'R' - movement/adjustment/retreat
         const requestedPower = orderBuilding.power;
-        var unit = '';
         var requestedProvince = '';
+        const COUNTRIES = ['Austria', 'England', 'France', 'Germany', 'Italy', 'Russia', 'Turkey'];
+
+        /** Get correct naming of province*/
+        // get all possible orderable locations in the game tree
 
         if (phaseType === 'M'){
-            /** MOVEMENT PHASE: check if controlling power have unit in selected province */
-            try{
-                [unit, requestedProvince] = ProvinceCheck.occupied(province, requestedPower)[0].split(' ');
-            } catch(error){
-                return this.props.onError(error);
+            /** MOVEMENT PHASE */
+            for (const power of COUNTRIES){
+                var occupiedProvince = province.getOccupied(power.toUpperCase());
+                if (occupiedProvince){
+                    requestedProvince = occupiedProvince.name.toUpperCase();
+                    break;
+                }
             }
-        } else if (phaseType === 'R'){
-            /** RETREAT PHASE: check if controlling power have retreating unit in selected province */
-            try{
-                [unit, requestedProvince] = ProvinceCheck.retreated(province, requestedPower)[0].split(' ');
-            } catch(error){
-                return this.props.onError(error);
+        }
+        else if (phaseType === 'R'){
+            /**RETREAT PHASE */
+            for (const power of COUNTRIES){
+                var retreatProvince = province.getRetreated(power.toUpperCase())
+                if (retreatProvince){
+                    requestedProvince = retreatProvince.retreatUnit.split(' ')[1];
+                    break;
+                }
             }
-        } else if (phaseType === 'A'){
-            /** ADJUSTMENT PHASE: check if province selected is an orderable location for controlling power */
-            const ORDER_TYPES = {ARMY: "A", FLEET: "F", DISBAND: "D"}
-            
-            //get orderable locations
+        }
+        else {
+            /** ADJUSTMENT PHASE */
+            const orderTypes = POSSIBLE_ORDERS['A'];
             const possibleOrders = this.props.game.ordersTree;
             const orderableLocations = new Set();
-            for (const [orderType, orderCode] of Object.entries(ORDER_TYPES)){
-                const orderTypeLocations = UTILS.javascript.getTreeValue(possibleOrders, orderCode)
 
+            for (const type of orderTypes){
+                const orderTypeLocations = UTILS.javascript.getTreeValue(possibleOrders, type);
                 if (orderTypeLocations !== null){
                     orderTypeLocations.forEach((x) => {
-                        if (orderType === "DISBAND"){
+                        if (type === 'D'){
                             // x is a unit
                             orderableLocations.add(x.split(" ")[1]);
                         } else{
@@ -98,24 +105,20 @@ export class SvgStandard extends React.Component {
                     });
                 }
             }
-            try{
-                // check if selected province is an orderable location
-                const provinceNames = ProvinceCheck.any(province, requestedPower);
-
-                for (const n_x of provinceNames){
-                    if (orderableLocations.has(n_x)){
-                        requestedProvince = n_x;
-                        break;
-                    }
+            const provinceNames = ProvinceCheck.any(province, null);
+            for (const n_x of provinceNames){
+                if (orderableLocations.has(n_x)){
+                    requestedProvince = n_x;
+                    break;
                 }
-                if (requestedProvince === ''){
-                    throw new Error(`No orderable locations at province ${province.name}`);
-                }
-            } catch(error){
-                return this.props.onError(error);
             }
         }
-        this.props.onChangeOrderDistribution(requestedPower, requestedProvince);
+        
+        if (requestedProvince === ''){
+            return this.props.onError(`No orderable locations at province ${province.name}`);
+        }
+
+        return this.props.onChangeOrderDistribution(requestedPower, requestedProvince, this.props.distributionAdviceSetting?.model);
     }
 
     handleClickedID(id) { 
@@ -423,12 +426,22 @@ export class SvgStandard extends React.Component {
                           symbolSizes={SymbolSizes}/> 
                 ); 
             } 
+
+            for (let classKey of Object.keys(classes)){
+                if (classes.hasOwnProperty(classKey)){
+                    if (classes[classKey] === "nopower" || classes[classKey] === "water" || classes[classKey] === "neutral"){
+                        classes[classKey] = `${classes[classKey]}light`
+                    }
+                }
+            }
+
             for (let center of power.centers) { 
-                setInfluence(classes, mapData, center, power.name); 
+                setInfluenceLightBackground(classes, mapData, center, power.name);
             } 
             for (let loc of power.influence) { 
-                if (!mapData.supplyCenters.has(loc)) 
-                    setInfluence(classes, mapData, loc, power.name); 
+                if (!mapData.supplyCenters.has(loc)){
+                    setInfluenceLightBackground(classes, mapData, loc, power.name); 
+                } 
             } 
             if (orders) { 
                 const powerOrders = (orders && orders.hasOwnProperty(power.name) && orders[power.name]) || [];
@@ -534,15 +547,16 @@ export class SvgStandard extends React.Component {
             } 
         } 
 
-        if (this.props.orderDistribution && this.props.showVisualDistribution){
-            for (var order in this.props.orderDistribution){
-                if (this.props.orderDistribution.hasOwnProperty(order)){
+        if (this.props.orderDistribution && this.props.distributionAdviceSetting?.display_mode === "V"){
+            var orderDistribution = this.props.orderDistribution.distribution
+            for (var order in orderDistribution){
+                if (orderDistribution.hasOwnProperty(order)){
                     const component = this.renderOrder(
                         this.props.orderBuilding.type,
                         order,
-                        this.props.orderBuilding.power,
+                        this.props.orderDistribution.power,
                         game,
-                        this.props.orderDistribution[order].opacity
+                        orderDistribution[order].opacity
                     );
                     if (component.renderedOrders.length !== 0) {
                         renderedOrders.push(component.renderedOrders[0]);
@@ -595,12 +609,12 @@ SvgStandard.propTypes = {
     orders: PropTypes.object, onHover: PropTypes.func, 
     onError: PropTypes.func.isRequired, 
     onSelectLocation: PropTypes.func, 
-    onSelectVia: PropTypes.func, 
+    onSelectVia: PropTypes.func,
     onOrderBuilding: PropTypes.func, 
     onOrderBuilt: PropTypes.func, 
     orderBuilding: PropTypes.object, 
     showAbbreviations: PropTypes.bool,
     onChangeOrderDistribution: PropTypes.func,
     orderDistribution: PropTypes.object,
-    showVisualDistribution: PropTypes.bool
+    distributionAdviceSetting: PropTypes.object
 }; // eslint-disable-line semi

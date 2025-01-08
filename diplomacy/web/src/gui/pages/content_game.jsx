@@ -170,6 +170,24 @@ export class ContentGame extends React.Component {
             }
         }
         this.schedule_timeout_id = null;
+
+        this.distribution_advice = {
+            'AUSTRIA': {}, 
+            'ENGLAND': {},
+            'FRANCE': {},
+            'GERMANY': {}, 
+            'ITALY': {}, 
+            'RUSSIA': {}, 
+            'TURKEY': {},
+        }
+
+        for (const power in this.props.data.distribution_advice){
+            if (!this.props.data.distribution_advice.hasOwnProperty(power))
+                continue
+            this.distribution_advice[power] = this.props.data.distribution_advice[power]
+        }
+
+
         this.state = {
             tabMain: null,
             tabPastMessages: null,
@@ -179,9 +197,10 @@ export class ContentGame extends React.Component {
             historyShowOrders: true,
             historyCurrentLoc: null,
             historyCurrentOrders: null,
+            distributionAdviceSetting: {},
+            shiftKeyPressed: [false, null],
             orderDistribution: {},
-            showVisualDistribution: false,
-            showDistributionAdvice: true,
+            hoverDistributionOrder: [],
             orders: orders, // {power name => {loc => {local: bool, order: str}}}
             power: null,
             orderBuildingType: null,
@@ -562,6 +581,7 @@ export class ContentGame extends React.Component {
                         messageHighlights: {},
                         orderBuildingPath: [],
                         orderDistribution: {},
+                        hoverDistributionOrder: [],
                         hasInitialOrders: false,
                         hoverOrders: [],
                         stances: {},
@@ -707,14 +727,14 @@ export class ContentGame extends React.Component {
 
     // ]
 
-    onChangeOrderDistribution(requestedPower, requestedProvince){
+    onChangeOrderDistribution(requestedPower, requestedProvince, model){
         /** handler to retrieve model prediction to render distribution advice*/
-        this.props.data.client.getOrderDistribution({ power_name: requestedPower, province: requestedProvince }).then(predictedDistribution => {
-            if (predictedDistribution.hasOwnProperty("error")){
-                this.getPage().error(predictedDistribution.error);
+        this.props.data.client.getOrderDistribution({ power_name: requestedPower, province: requestedProvince, model: model }).then(res => {
+            if (res.hasOwnProperty("error")){
+                this.getPage().error(res.error);
             }
             else{
-                this.setState({ orderDistribution: predictedDistribution });
+                this.setState({ orderDistribution: { power: res.power, distribution: res.preds }});
             }
         });
     }
@@ -724,7 +744,9 @@ export class ContentGame extends React.Component {
             power: event.target.value,
             tabPastMessages: null,
             tabCurrentMessages: null,
-            orderDistribution: {}
+            distributionAdviceSetting: this.distribution_advice.hasOwnProperty(event.target.value) ? this.distribution_advice[event.target.value] : {},
+            orderDistribution: {},
+            hoverDistributionOrder: [],
         });
     }
 
@@ -1113,7 +1135,7 @@ export class ContentGame extends React.Component {
      * Reset local orders and replace them with current server orders for current selected power.
      */
     reloadServerOrders() {
-        this.setState({ orderBuildingPath: [], orderDistribution: {} }).then(() => {
+        this.setState({ orderBuildingPath: [], orderDistribution: {}, hoverDistributionOrder: [] }).then(() => {
             const currentPowerName = this.getCurrentPowerName();
             if (currentPowerName) {
                 this.reloadPowerServerOrders(currentPowerName);
@@ -1299,7 +1321,8 @@ export class ContentGame extends React.Component {
         return this.setState({
             orderBuildingType: form.order_type,
             orderBuildingPath: [],
-            orderDistribution: {}
+            orderDistribution: {},
+            hoverDistributionOrder: []
         });
     }
 
@@ -2269,6 +2292,12 @@ export class ContentGame extends React.Component {
         for (let oo of this.state.hoverOrders) {
             orders[powerName].push(oo);
         }
+        for (let oo of this.state.hoverDistributionOrder){
+            if (!orders.hasOwnProperty(this.state.orderDistribution.power)){
+                orders[this.state.orderDistribution.power] = [];
+            }
+            orders[this.state.orderDistribution.power].push(oo);
+        }
         return (
             <div id="current-map" key="current-map">
                 <Map
@@ -2291,7 +2320,7 @@ export class ContentGame extends React.Component {
                     orders={orders}
                     onChangeOrderDistribution={this.onChangeOrderDistribution}
                     orderDistribution={this.state.orderDistribution}
-                    showVisualDistribution={this.state.showVisualDistribution}
+                    distributionAdviceSetting={this.state.distributionAdviceSetting}
                     onSelectLocation={this.onSelectLocation}
                     onSelectVia={this.onSelectVia}
                 />
@@ -3195,14 +3224,15 @@ export class ContentGame extends React.Component {
             );
         }
 
-        if (this.state.showDistributionAdvice && !this.state.showVisualDistribution){
+        if (this.state.distributionAdviceSetting?.display_mode === "T"
+            && this.state.orderDistribution.hasOwnProperty('distribution')){
             /** render messages that outlines the probability of all possible orders for a selected province*/
-            var distributionMoves = new Array(Object.keys(this.state.orderDistribution).length);
-            for (var order in this.state.orderDistribution){
-                if (! this.state.orderDistribution.hasOwnProperty(order)){
+            var distributionMoves = new Array(Object.keys(this.state.orderDistribution.distribution).length);
+            for (var order in this.state.orderDistribution.distribution){
+                if (! this.state.orderDistribution.distribution.hasOwnProperty(order)){
                     continue;
                 }
-                distributionMoves[this.state.orderDistribution[order].rank] = `${order}: ${(this.state.orderDistribution[order].pred_prob*100.0).toFixed(2)}%`;
+                distributionMoves[this.state.orderDistribution.distribution[order].rank] = `${order}: ${(this.state.orderDistribution.distribution[order].pred_prob*100.0).toFixed(2)}%`;
             }
             const distributionMessages = distributionMoves.map((move) => {
                 return (
@@ -3214,10 +3244,10 @@ export class ContentGame extends React.Component {
                         }}
                         onMouseEnter={() => {
                             let newMoves = [move.split(":")[0]];
-                            this.setState({ hoverOrders: newMoves });
+                            this.setState({ hoverDistributionOrder: newMoves });
                         }}
                         onMouseLeave={() => {
-                            this.setState({ hoverOrders: [] });
+                            this.setState({ hoverDistributionOrder: [] });
                         }}
                     >
                         <ChatMessage
@@ -3229,29 +3259,29 @@ export class ContentGame extends React.Component {
                             }}
                         ></ChatMessage>
                         <div
-                                style={{
-                                    flexGrow: 0,
-                                    flexShrink: 0,
-                                    display: "flex",
-                                    alignItems: "flex-end",
+                        style={{
+                            flexGrow: 0,
+                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "flex-end",
+                        }}
+                        >
+                            <Button
+                                key={"a"}
+                                pickEvent={true}
+                                title={"accept"}
+                                color={"success"}
+                                onClick={() => {
+                                    if (move.indexOf('NOORDER') === -1){
+                                        this.onOrderBuilt(
+                                            currentPowerName,
+                                            move.split(":")[0]
+                                        );
+                                    }
                                 }}
-                            >
-                                <Button
-                                    key={"a"}
-                                    pickEvent={true}
-                                    title={"accept"}
-                                    color={"success"}
-                                    onClick={() => {
-                                        if (move.indexOf('NOORDER') === -1){
-                                            this.onOrderBuilt(
-                                                currentPowerName,
-                                                move.split(":")[0]
-                                            );
-                                        }
-                                    }}
-                                    invisible={!(isCurrent && !isAdmin)}
-                                ></Button>
-                        </div>
+                                invisible={!(isCurrent && (this.state.orderDistribution.power === this.getCurrentPowerName()))}
+                            ></Button>
+                        </div>  
                     </div>
                 );
             })
@@ -3290,7 +3320,7 @@ export class ContentGame extends React.Component {
                     </div>
                 )}
                 {(suggestionType !== null && (suggestionType & 2) === 2) || 
-                (this.state.showDistributionAdvice && ! this.state.showVisualDistribution) && (
+                (this.state.distributionAdviceSetting?.display_mode === "T") && (
                     <ChatContainer
                         style={{
                             display: "flex",
@@ -3631,9 +3661,12 @@ export class ContentGame extends React.Component {
                     allowedPowerOrderTypes,
                     phaseType
                 );
-                if (showDistributionAdvice){
-                    allowedPowerOrderTypes.push("P"); // mode for getting order distribution predicted by model
-                }
+            }
+            this.state.distributionAdviceSetting = this.distribution_advice[currentPowerName] 
+            if (Object.keys(this.state.distributionAdviceSetting).length > 0){
+                allowedPowerOrderTypes.push("P"); // mode for getting order distribution predicted by model
+            }
+            if (allowedPowerOrderTypes.length) {
                 if (
                     this.state.orderBuildingType &&
                     allowedPowerOrderTypes.includes(
@@ -3765,7 +3798,7 @@ export class ContentGame extends React.Component {
         );
 
         const hasMoveSuggestion =
-            ((suggestionType !== null && (suggestionType & 2) === 2) || (!this.state.showDistributionAdvice));
+            ((suggestionType !== null && (suggestionType & 2) === 2) || (this.state.distributionAdviceSetting?.display_mode === "T"));
 
         let gameContent;
 
@@ -3884,6 +3917,16 @@ export class ContentGame extends React.Component {
         this.props.data.displayed = true;
         // Try to prevent scrolling when pressing keys Home and End.
         document.onkeydown = (event) => {
+            if (event.key.toLowerCase() === "shift"){
+                let currOrderBuildingType = this.state.orderBuildingType;
+                this.setState({ 
+                    shiftKeyPressed: [ true, currOrderBuildingType ], 
+                    orderBuildingType: "P",
+                    orderBuildingPath: [],
+                    orderDistribution: {},
+                    hoverDistributionOrder: []
+                } );
+            }
             if (["home", "end"].includes(event.key.toLowerCase())) {
                 // Try to prevent scrolling.
                 if (event.hasOwnProperty("cancelBubble"))
@@ -3898,6 +3941,18 @@ export class ContentGame extends React.Component {
         window.addEventListener("blur", this.handleBlur);
         window.addEventListener("focus", this.handleFocus);
         this.state.lastSwitchPanelTime = Date.now();
+        document.onkeyup = (event) => {
+            if (event.key.toLowerCase() === "shift"){
+                let prevOrderBuildingType = this.state.shiftKeyPressed[1];
+                this.setState({ shiftKeyPressed: [ false, null ],  
+                    orderBuildingType: prevOrderBuildingType,
+                    orderBuildingPath: [],
+                    orderDistribution: {},
+                    hoverDistributionOrder: []
+                 } );
+            }
+        };
+
     }
 
     componentDidUpdate() {
