@@ -3525,7 +3525,7 @@ export class ContentGame extends React.Component {
                     allowedPowerOrderTypes,
                     phaseType
                 );
-                if (showDistributionAdvice){
+                if (this.state.showDistributionAdvice){
                     allowedPowerOrderTypes.push("P"); // mode for getting order distribution predicted by model
                 }
                 if (
@@ -3659,7 +3659,7 @@ export class ContentGame extends React.Component {
         );
 
         const hasMoveSuggestion =
-            ((suggestionType !== null && (suggestionType & 2) === 2) || (!this.state.showDistributionAdvice));
+            ((suggestionType !== null && (suggestionType & 2) === 2) || (this.state.showDistributionAdvice));
 
         let gameContent;
 
