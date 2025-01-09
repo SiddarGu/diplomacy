@@ -180,8 +180,9 @@ export class ContentGame extends React.Component {
             historyCurrentLoc: null,
             historyCurrentOrders: null,
             orderDistribution: {},
-            showVisualDistribution: false,
+            showVisualDistribution: true,
             showDistributionAdvice: true,
+            hoverDistributionOrder: [],
             orders: orders, // {power name => {loc => {local: bool, order: str}}}
             power: null,
             orderBuildingType: null,
@@ -558,6 +559,7 @@ export class ContentGame extends React.Component {
                         messageHighlights: {},
                         orderBuildingPath: [],
                         orderDistribution: {},
+                        hoverDistributionOrder: [],
                         hasInitialOrders: false,
                         stances: {},
                     }).then(() =>
@@ -704,12 +706,12 @@ export class ContentGame extends React.Component {
 
     onChangeOrderDistribution(requestedPower, requestedProvince){
         /** handler to retrieve model prediction to render distribution advice*/
-        this.props.data.client.getOrderDistribution({ power_name: requestedPower, province: requestedProvince }).then(predictedDistribution => {
-            if (predictedDistribution.hasOwnProperty("error")){
-                this.getPage().error(predictedDistribution.error);
+        this.props.data.client.getOrderDistribution({ power_name: requestedPower, province: requestedProvince }).then(res => {
+            if (res.hasOwnProperty("error")){
+                this.getPage().error(res.error);
             }
             else{
-                this.setState({ orderDistribution: predictedDistribution });
+                this.setState({ orderDistribution: { power: res.power, distribution: res.preds }});
             }
         });
     }
@@ -2168,6 +2170,12 @@ export class ContentGame extends React.Component {
         for (let oo of this.state.hoverOrders) {
             orders[powerName].push(oo);
         }
+        for (let oo of this.state.hoverDistributionOrder){
+            if (!orders.hasOwnProperty(this.state.orderDistribution.power)){
+                orders[this.state.orderDistribution.power] = [];
+            }
+            orders[this.state.orderDistribution.power].push(oo);
+        }
         return (
             <div id="current-map" key="current-map">
                 <Map
@@ -3089,14 +3097,14 @@ export class ContentGame extends React.Component {
             );
         }
 
-        if (this.state.showDistributionAdvice && !this.state.showVisualDistribution){
+        if (this.state.showDistributionAdvice && !this.state.showVisualDistribution && this.state.orderDistribution.hasOwnProperty('distribution')){
             /** render messages that outlines the probability of all possible orders for a selected province*/
-            var distributionMoves = new Array(Object.keys(this.state.orderDistribution).length);
-            for (var order in this.state.orderDistribution){
-                if (! this.state.orderDistribution.hasOwnProperty(order)){
+            var distributionMoves = new Array(Object.keys(this.state.orderDistribution.distribution).length);
+            for (var order in this.state.orderDistribution.distribution){
+                if (! this.state.orderDistribution.distribution.hasOwnProperty(order)){
                     continue;
                 }
-                distributionMoves[this.state.orderDistribution[order].rank] = `${order}: ${(this.state.orderDistribution[order].pred_prob*100.0).toFixed(2)}%`;
+                distributionMoves[this.state.orderDistribution.distribution[order].rank] = `${order}: ${(this.state.orderDistribution.distribution[order].pred_prob*100.0).toFixed(2)}%`;
             }
             const distributionMessages = distributionMoves.map((move) => {
                 return (
@@ -3108,10 +3116,10 @@ export class ContentGame extends React.Component {
                         }}
                         onMouseEnter={() => {
                             let newMoves = [move.split(":")[0]];
-                            this.setState({ hoverOrders: newMoves });
+                            this.setState({ hoverDistributionOrder: newMoves });
                         }}
                         onMouseLeave={() => {
-                            this.setState({ hoverOrders: [] });
+                            this.setState({ hoverDistributionOrder: [] });
                         }}
                     >
                         <ChatMessage
@@ -3123,29 +3131,29 @@ export class ContentGame extends React.Component {
                             }}
                         ></ChatMessage>
                         <div
-                                style={{
-                                    flexGrow: 0,
-                                    flexShrink: 0,
-                                    display: "flex",
-                                    alignItems: "flex-end",
+                        style={{
+                            flexGrow: 0,
+                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "flex-end",
+                        }}
+                        >
+                            <Button
+                                key={"a"}
+                                pickEvent={true}
+                                title={"accept"}
+                                color={"success"}
+                                onClick={() => {
+                                    if (move.indexOf('NOORDER') === -1){
+                                        this.onOrderBuilt(
+                                            currentPowerName,
+                                            move.split(":")[0]
+                                        );
+                                    }
                                 }}
-                            >
-                                <Button
-                                    key={"a"}
-                                    pickEvent={true}
-                                    title={"accept"}
-                                    color={"success"}
-                                    onClick={() => {
-                                        if (move.indexOf('NOORDER') === -1){
-                                            this.onOrderBuilt(
-                                                currentPowerName,
-                                                move.split(":")[0]
-                                            );
-                                        }
-                                    }}
-                                    invisible={!(isCurrent && !isAdmin)}
-                                ></Button>
-                        </div>
+                                invisible={!(isCurrent && !isAdmin && (this.state.orderDistribution.power === this.getCurrentPowerName()))}
+                            ></Button>
+                        </div>  
                     </div>
                 );
             })
@@ -3525,9 +3533,11 @@ export class ContentGame extends React.Component {
                     allowedPowerOrderTypes,
                     phaseType
                 );
-                if (this.state.showDistributionAdvice){
-                    allowedPowerOrderTypes.push("P"); // mode for getting order distribution predicted by model
-                }
+            }
+            if (this.state.showDistributionAdvice){
+                allowedPowerOrderTypes.push("P"); // mode for getting order distribution predicted by model
+            }
+            if (allowedPowerOrderTypes.length) {
                 if (
                     this.state.orderBuildingType &&
                     allowedPowerOrderTypes.includes(
@@ -3659,7 +3669,7 @@ export class ContentGame extends React.Component {
         );
 
         const hasMoveSuggestion =
-            ((suggestionType !== null && (suggestionType & 2) === 2) || (this.state.showDistributionAdvice));
+            ((suggestionType !== null && (suggestionType & 2) === 2) || (this.state.showDistributionAdvice && !this.state.showVisualDistribution));
 
         let gameContent;
 

@@ -58,9 +58,8 @@ def on_get_order_distribution(server, request, connection_handler):
 
     level = verify_request(server, request, connection_handler, require_master=False)
     game_state = level.game.get_state()
-    requested_power = request.power_name
     requested_province = request.province
-    model = Models.LOGISTIC_REGRESSION(game_state, requested_power, requested_province)
+    model = Models.LOGISTIC_REGRESSION(game_state, requested_province)
     preds = model.predict(top_k=6)
     return responses.DataSavedGame(data=preds, request_id=request.request_id)
 

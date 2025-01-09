@@ -9,9 +9,8 @@ class ModelPath:
 
 # MODEL UTILS
 class Model(ABC):
-    def __init__(self, game_state, requested_power, requested_province):
+    def __init__(self, game_state, requested_province):
         self.game_state = game_state
-        self.requested_power = requested_power
         self.requested_province = requested_province
 
     def predict(self, top_k=6):
@@ -22,7 +21,7 @@ class Model(ABC):
 
 class LogisticRegression(Model):
     def predict(self, top_k=6):
-        model = BaselineAdvice(ModelPath.LOGISTIC_REGRESSION, self.game_state, self.requested_power, self.requested_province)
+        model = BaselineAdvice(ModelPath.LOGISTIC_REGRESSION, self.game_state, self.requested_province)
         return model.predict(top_k)
     
 # MODELS

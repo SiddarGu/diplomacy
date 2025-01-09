@@ -26,7 +26,7 @@ import {Game} from "../../../diplomacy/engine/game";
 import {MapData} from "../../utils/map_data";
 import {UTILS} from "../../../diplomacy/utils/utils";
 import {Diplog} from "../../../diplomacy/utils/diplog";
-import {extendOrderBuilding, ProvinceCheck} from "../../utils/order_building";
+import {extendOrderBuilding, ProvinceCheck, POSSIBLE_ORDERS} from "../../utils/order_building";
 import {Unit} from "../common/unit";
 import {Hold} from "../common/hold";
 import {Move} from "../common/move";
@@ -35,7 +35,6 @@ import {SupportHold} from "../common/supportHold";
 import {Convoy} from "../common/convoy";
 import {Build} from "../common/build";
 import {Disband} from "../common/disband";
-
 
 
 export class SvgStandard extends React.Component { 
@@ -59,36 +58,43 @@ export class SvgStandard extends React.Component {
         const localGame = this.props.game; //Game Object
         const phaseType = localGame.phase.slice(-1); // 'M'/'A'/'R' - movement/adjustment/retreat
         const requestedPower = orderBuilding.power;
-        var unit = '';
         var requestedProvince = '';
+        const COUNTRIES = ['Austria', 'England', 'France', 'Germany', 'Italy', 'Russia', 'Turkey'];
+
+        /** Get correct naming of province*/
+        // get all possible orderable locations in the game tree
 
         if (phaseType === 'M'){
-            /** MOVEMENT PHASE: check if controlling power have unit in selected province */
-            try{
-                [unit, requestedProvince] = ProvinceCheck.occupied(province, requestedPower)[0].split(' ');
-            } catch(error){
-                return this.props.onError(error);
+            /** MOVEMENT PHASE */
+            for (const power of COUNTRIES){
+                var occupiedProvince = province.getOccupied(power.toUpperCase());
+                if (occupiedProvince){
+                    requestedProvince = occupiedProvince.name.toUpperCase();
+                    break;
+                }
             }
-        } else if (phaseType === 'R'){
-            /** RETREAT PHASE: check if controlling power have retreating unit in selected province */
-            try{
-                [unit, requestedProvince] = ProvinceCheck.retreated(province, requestedPower)[0].split(' ');
-            } catch(error){
-                return this.props.onError(error);
+        }
+        else if (phaseType === 'R'){
+            /**RETREAT PHASE */
+            for (const power of COUNTRIES){
+                var retreatProvince = province.getRetreated(power.toUpperCase())
+                if (retreatProvince){
+                    requestedProvince = retreatProvince.retreatUnit.split(' ')[0];
+                    break;
+                }
             }
-        } else if (phaseType === 'A'){
-            /** ADJUSTMENT PHASE: check if province selected is an orderable location for controlling power */
-            const ORDER_TYPES = {ARMY: "A", FLEET: "F", DISBAND: "D"}
-            
-            //get orderable locations
+        }
+        else {
+            /** ADJUSTMENT PHASE */
+            const orderTypes = POSSIBLE_ORDERS['A'];
             const possibleOrders = this.props.game.ordersTree;
             const orderableLocations = new Set();
-            for (const [orderType, orderCode] of Object.entries(ORDER_TYPES)){
-                const orderTypeLocations = UTILS.javascript.getTreeValue(possibleOrders, orderCode)
 
+            for (const type of orderTypes){
+                const orderTypeLocations = UTILS.javascript.getTreeValue(possibleOrders, type);
                 if (orderTypeLocations !== null){
                     orderTypeLocations.forEach((x) => {
-                        if (orderType === "DISBAND"){
+                        if (type === 'D'){
                             // x is a unit
                             orderableLocations.add(x.split(" ")[1]);
                         } else{
@@ -98,24 +104,20 @@ export class SvgStandard extends React.Component {
                     });
                 }
             }
-            try{
-                // check if selected province is an orderable location
-                const provinceNames = ProvinceCheck.any(province, requestedPower);
-
-                for (const n_x of provinceNames){
-                    if (orderableLocations.has(n_x)){
-                        requestedProvince = n_x;
-                        break;
-                    }
+            const provinceNames = ProvinceCheck.any(province, null);
+            for (const n_x of provinceNames){
+                if (orderableLocations.has(n_x)){
+                    requestedProvince = n_x;
+                    break;
                 }
-                if (requestedProvince === ''){
-                    throw new Error(`No orderable locations at province ${province.name}`);
-                }
-            } catch(error){
-                return this.props.onError(error);
             }
         }
-        this.props.onChangeOrderDistribution(requestedPower, requestedProvince);
+        
+        if (requestedProvince === ''){
+            return this.props.onError(`No orderable locations at province ${province.name}`);
+        }
+
+        return this.props.onChangeOrderDistribution(requestedPower, requestedProvince);
     }
 
     handleClickedID(id) { 
@@ -535,14 +537,15 @@ export class SvgStandard extends React.Component {
         } 
 
         if (this.props.orderDistribution && this.props.showVisualDistribution){
-            for (var order in this.props.orderDistribution){
-                if (this.props.orderDistribution.hasOwnProperty(order)){
+            var orderDistribution = this.props.orderDistribution.distribution
+            for (var order in orderDistribution){
+                if (orderDistribution.hasOwnProperty(order)){
                     const component = this.renderOrder(
                         this.props.orderBuilding.type,
                         order,
-                        this.props.orderBuilding.power,
+                        this.props.orderDistribution.power,
                         game,
-                        this.props.orderDistribution[order].opacity
+                        orderDistribution[order].opacity
                     );
                     if (component.renderedOrders.length !== 0) {
                         renderedOrders.push(component.renderedOrders[0]);
