@@ -79,7 +79,7 @@ export class SvgStandard extends React.Component {
             for (const power of COUNTRIES){
                 var retreatProvince = province.getRetreated(power.toUpperCase())
                 if (retreatProvince){
-                    requestedProvince = retreatProvince.retreatUnit.split(' ')[0];
+                    requestedProvince = retreatProvince.retreatUnit.split(' ')[1];
                     break;
                 }
             }
