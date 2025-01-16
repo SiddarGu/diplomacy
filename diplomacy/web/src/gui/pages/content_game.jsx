@@ -170,6 +170,23 @@ export class ContentGame extends React.Component {
             }
         }
         this.schedule_timeout_id = null;
+
+        this.showDistributionAdvice = false;
+        this.showVisualDistribution = false;
+
+        if (this.props.data.distribution_advice === 0){
+            this.showDistributionAdvice =  false;
+            this.showVisualDistribution = false;
+        }
+        if (this.props.data.distribution_advice === 1){
+            this.showDistributionAdvice = true;
+            this.showVisualDistribution = true;
+        }
+        if (this.props.data.distribution_advice === 2){
+            this.showDistributionAdvice = true;
+            this.showVisualDistribution = false;
+        }
+
         this.state = {
             tabMain: null,
             tabPastMessages: null,
@@ -180,8 +197,6 @@ export class ContentGame extends React.Component {
             historyCurrentLoc: null,
             historyCurrentOrders: null,
             orderDistribution: {},
-            showVisualDistribution: true,
-            showDistributionAdvice: true,
             hoverDistributionOrder: [],
             orders: orders, // {power name => {loc => {local: bool, order: str}}}
             power: null,
@@ -2198,7 +2213,7 @@ export class ContentGame extends React.Component {
                     orders={orders}
                     onChangeOrderDistribution={this.onChangeOrderDistribution}
                     orderDistribution={this.state.orderDistribution}
-                    showVisualDistribution={this.state.showVisualDistribution}
+                    showVisualDistribution={this.showVisualDistribution}
                     onSelectLocation={this.onSelectLocation}
                     onSelectVia={this.onSelectVia}
                 />
@@ -3097,7 +3112,7 @@ export class ContentGame extends React.Component {
             );
         }
 
-        if (this.state.showDistributionAdvice && !this.state.showVisualDistribution && this.state.orderDistribution.hasOwnProperty('distribution')){
+        if (this.showDistributionAdvice && !this.showVisualDistribution && this.state.orderDistribution.hasOwnProperty('distribution')){
             /** render messages that outlines the probability of all possible orders for a selected province*/
             var distributionMoves = new Array(Object.keys(this.state.orderDistribution.distribution).length);
             for (var order in this.state.orderDistribution.distribution){
@@ -3192,7 +3207,7 @@ export class ContentGame extends React.Component {
                     </div>
                 )}
                 {(suggestionType !== null && (suggestionType & 2) === 2) || 
-                (this.state.showDistributionAdvice && ! this.state.showVisualDistribution) && (
+                (this.showDistributionAdvice && ! this.showVisualDistribution) && (
                     <ChatContainer
                         style={{
                             display: "flex",
@@ -3534,7 +3549,7 @@ export class ContentGame extends React.Component {
                     phaseType
                 );
             }
-            if (this.state.showDistributionAdvice){
+            if (this.showDistributionAdvice){
                 allowedPowerOrderTypes.push("P"); // mode for getting order distribution predicted by model
             }
             if (allowedPowerOrderTypes.length) {
@@ -3669,7 +3684,7 @@ export class ContentGame extends React.Component {
         );
 
         const hasMoveSuggestion =
-            ((suggestionType !== null && (suggestionType & 2) === 2) || (this.state.showDistributionAdvice && !this.state.showVisualDistribution));
+            ((suggestionType !== null && (suggestionType & 2) === 2) || (this.showDistributionAdvice && !this.showVisualDistribution));
 
         let gameContent;
 

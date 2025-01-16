@@ -169,7 +169,9 @@ def on_create_game(server, request, connection_handler):
                              n_controls=request.n_controls,
                              deadline=request.deadline,
                              registration_password=password,
-                             server=server)
+                             server=server,
+                             distribution_advice=request.distribution_advice
+                             )
 
     # Make sure game creator will be a game master (set him as moderator if he's not an admin).
     if not server.users.has_admin(username):
@@ -737,7 +739,8 @@ def on_list_games(server, request, connection_handler):
             n_players=server_game.count_controlled_powers(),
             n_controls=server_game.get_expected_controls_count(),
             deadline=server_game.deadline,
-            registration_password=bool(server_game.registration_password)
+            registration_password=bool(server_game.registration_password),
+            distribution_advice=server_game.distribution_advice
         ))
     return responses.DataGames(data=selected_game_indices, request_id=request.request_id)
 
