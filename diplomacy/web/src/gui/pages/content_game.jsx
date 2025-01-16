@@ -3166,7 +3166,7 @@ export class ContentGame extends React.Component {
                                         );
                                     }
                                 }}
-                                invisible={!(isCurrent && !isAdmin && (this.state.orderDistribution.power === this.getCurrentPowerName()))}
+                                invisible={!(isCurrent && (this.state.orderDistribution.power === this.getCurrentPowerName()))}
                             ></Button>
                         </div>  
                     </div>
