@@ -67,7 +67,6 @@ export class Game {
       "logs",
       "log_history",
       "order_suggestions",
-      "distribution_advice"
     ];
     // These fields may be null.
     const nullFields = ["n_controls", "registration_password"];
@@ -226,7 +225,7 @@ export class Game {
     // {loc => order type}
     this.orderableLocToTypes = null;
     this.client = null; // Used as pointer to a NetworkGame.
-    this.distribution_advice = gameData.distribution_advice;
+    this.distribution_advice = gameData.distribution_advice ? gameData?.distribution_advice : 0;
   }
 
   get n_players() {
