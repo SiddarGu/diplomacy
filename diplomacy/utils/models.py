@@ -4,8 +4,9 @@ from abc import ABC
 from baseline_models.model_code.engine_predict import BaselineAdvice
 
 # MODEL PATHS (TODO: fill in the model paths here)
-class ModelPath:
-    LOGISTIC_REGRESSION = ''
+MODEL_PATHS = {
+    "logistic_regression": ""
+}
 
 # MODEL UTILS
 class Model(ABC):
@@ -19,11 +20,9 @@ class Model(ABC):
         """
         raise NotImplementedError
 
+# MODELS
 class LogisticRegression(Model):
     def predict(self, top_k=6):
-        model = BaselineAdvice(ModelPath.LOGISTIC_REGRESSION, self.game_state, self.requested_province)
+        model = BaselineAdvice(MODEL_PATHS["logistic_regression"], self.game_state, self.requested_province)
         return model.predict(top_k)
-    
-# MODELS
-class Models:
-    LOGISTIC_REGRESSION = LogisticRegression
+
