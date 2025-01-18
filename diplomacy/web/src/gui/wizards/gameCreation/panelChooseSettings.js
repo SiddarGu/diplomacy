@@ -30,6 +30,12 @@ const DEADLINES = [
     [60 * 60 * 24, '24 hrs'],
 ];
 
+const DISTRIBUTION_ADVICE_SETTINGS = [
+    [0, '(no advice)'],
+    [1, 'visual'],
+    [2, 'textual'],
+];
+
 export class PanelChooseSettings extends React.Component {
     constructor(props) {
         super(props);
@@ -37,6 +43,7 @@ export class PanelChooseSettings extends React.Component {
         this.onSelectDeadline = this.onSelectDeadline.bind(this);
         this.onSetRegistrationPassword = this.onSetRegistrationPassword.bind(this);
         this.onSetGameID = this.onSetGameID.bind(this);
+        this.onSelectDistributionAdvice = this.onSelectDistributionAdvice.bind(this)
     }
 
     onCheckNoPress(event) {
@@ -56,6 +63,10 @@ export class PanelChooseSettings extends React.Component {
         if (!gameID)
             gameID = UTILS.createGameID(this.props.username);
         this.props.onUpdateParams({game_id: gameID});
+    }
+
+    onSelectDistributionAdvice(event){
+        this.props.onUpdateParams({distribution_advice: parseInt(event.target.value)});
     }
 
     render() {
@@ -92,6 +103,17 @@ export class PanelChooseSettings extends React.Component {
                                        id="game-id"
                                        value={this.props.params.game_id}
                                        onChange={this.onSetGameID}/>
+                            </div>
+                        </div>
+                        <div className="form-group row mb-2">
+                            <label className="col-md col-form-label" htmlFor="distribution">Distribution advice</label>
+                            <div className="col-md">
+                                <select id="distribution-advice" className="custom-select custom-select-sm"
+                                onChange={this.onSelectDistributionAdvice}>
+                                    {DISTRIBUTION_ADVICE_SETTINGS.map((setting, index) => (
+                                        <option key={index} value={setting[0]}>{setting[1]}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                         <div className="custom-control custom-checkbox mb-5">

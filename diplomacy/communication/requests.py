@@ -275,7 +275,7 @@ class CreateGame(_AbstractChannelRequest):
               game created and joined. Either a power game (if power name given) or an omniscient game.
     """
     __slots__ = ['game_id', 'power_name', 'state', 'map_name', 'rules', 'n_controls', 'deadline',
-                 'registration_password', 'daide_port', 'player_type']
+                 'registration_password', 'daide_port', 'player_type', 'distribution_advice']
     params = {
         strings.GAME_ID: parsing.OptionalValueType(str),
         strings.N_CONTROLS: parsing.OptionalValueType(int),
@@ -286,7 +286,8 @@ class CreateGame(_AbstractChannelRequest):
         strings.MAP_NAME: parsing.DefaultValueType(str, 'standard'),
         strings.RULES: parsing.OptionalValueType(parsing.SequenceType(str, sequence_builder=set)),
         strings.DAIDE_PORT: parsing.OptionalValueType(int),
-        strings.PLAYER_TYPE: parsing.OptionalValueType(str)
+        strings.PLAYER_TYPE: parsing.OptionalValueType(str),
+        strings.DISTRIBUTION_ADVICE: parsing.DefaultValueType(int, 0)
     }
 
     def __init__(self, **kwargs):
@@ -300,6 +301,7 @@ class CreateGame(_AbstractChannelRequest):
         self.rules = set()
         self.daide_port = None
         self.player_type = ''
+        self.distribution_advice = 0
         super(CreateGame, self).__init__(**kwargs)
 
 
@@ -574,6 +576,21 @@ class SetGrade(_AbstractChannelRequest):
 # ==============
 # Game requests.
 # ==============
+
+class GetOrderDistribution(_AbstractGameRequest):
+    """
+    Game request to get model prediction (i.e., the probability distribution) of possible orders 
+    for a selected province
+
+    :param power_name (str): power that requests the predictions
+    :param province (str): the province selected by the requested power
+    """
+    __slots__ = ['power_name', 'province']
+
+    params = {
+        'power_name': str,
+        'province': str
+    }
 
 class ClearCenters(_AbstractGameRequest):
     """ Game request to clear supply centers. See method :meth:`.Game.clear_centers`.
