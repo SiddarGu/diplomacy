@@ -2031,7 +2031,6 @@ export class ContentGame extends React.Component {
                 <Grid container spacing={2}>
                     <Grid item xs={12} sx={{ height: "100%" }}>
                         <Box sx={{ width: "100%", height: "550px" }}>
-                            <div>
                                 <MainContainer responsive>
                                     <Sidebar position="left" scrollable={true}>
                                         <ConversationList>
@@ -2136,7 +2135,6 @@ export class ContentGame extends React.Component {
                                         ></Button>
                                     </>
                                 )}
-                            </div>
                         </Box>
                     </Grid>
                 </Grid>
