@@ -1959,7 +1959,7 @@ export class ContentGame extends React.Component {
 
             if (dir === "incoming") {
                 // if is a daide proposal
-                if (msg.daide) {
+                if (msg.type && msg.type === "daide") {
                     renderedMessages.push(
                         <Row
                             style={{
