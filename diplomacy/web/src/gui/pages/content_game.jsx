@@ -1940,7 +1940,7 @@ export class ContentGame extends React.Component {
 
             if (dir === "incoming") {
                 // if is a daide proposal
-                if (msg.daide) {
+                if (msg.type && msg.type === "daide") {
                     renderedMessages.push(
                         <Row
                             style={{
@@ -1983,7 +1983,7 @@ export class ContentGame extends React.Component {
                                           this.state.annotatedMessages.hasOwnProperty(
                                             msg.time_sent)}
                                 onClick={async () => {
-                                    await sendMessage(
+                                    await this.sendMessage(
                                         engine.client,
                                         currentTabId,
                                         "no",
