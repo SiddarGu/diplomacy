@@ -487,11 +487,12 @@ export class ContentGame extends React.Component {
         );
     }
 
-    notifiedNetworkGame(networkGame, notification) {
+    async notifiedNetworkGame(networkGame, notification) {
         if (this.networkGameIsDisplayed(networkGame)) {
             const msg = `Game (${networkGame.local.game_id}) received notification ${notification.name}.`;
             this.reloadDeadlineTimer(networkGame);
-            return this.forceUpdate().then(() => this.getPage().info(msg));
+            await this.forceUpdate();
+            return this.getPage().info(msg);
         }
         return noPromise();
     }
@@ -577,7 +578,7 @@ export class ContentGame extends React.Component {
             );
     }
 
-    notifiedNewGameMessage(networkGame, notification) {
+    async notifiedNewGameMessage(networkGame, notification) {
         let protagonist = notification.message.sender;
         if (notification.message.recipient === "GLOBAL")
             protagonist = notification.message.recipient;
@@ -595,9 +596,8 @@ export class ContentGame extends React.Component {
         } else {
             ++messageHighlights["messages"];
         }
-        return this.setState({ messageHighlights: messageHighlights }).then(
-            () => this.notifiedNetworkGame(networkGame, notification)
-        );
+        await this.setState({ messageHighlights: messageHighlights });
+        return await this.notifiedNetworkGame(networkGame, notification);
     }
 
     bindCallbacks(networkGame) {
@@ -856,7 +856,7 @@ export class ContentGame extends React.Component {
         networkGame.sendDeceiving({ info: info });
     }
 
-    sendMessage(networkGame, recipient, body, deception) {
+    sendMessage(networkGame, recipient, body, deception, daide) {
         const page = this.getPage();
 
         // make sure the message is not empty
@@ -2001,7 +2001,7 @@ export class ContentGame extends React.Component {
                                           this.state.annotatedMessages.hasOwnProperty(
                                             msg.time_sent)}
                                 onClick={() => {
-                                    sendMessage(
+                                    this.sendMessage(
                                         engine.client,
                                         currentTabId,
                                         "no",
