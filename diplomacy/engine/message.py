@@ -73,7 +73,8 @@ class Message(Jsonable):
         strings.PHASE: str,                                 # phase short name (e.g. 'S1901M' or 'COMPLETED')
         strings.MESSAGE: str,
         strings.TRUTH: parsing.OptionalValueType(str),      # truth value (e.g. 'TRUE' or 'FALSE')
-        strings.TYPE: parsing.OptionalValueType(str)        # for centaur classification
+        strings.TYPE: parsing.OptionalValueType(str),       # for centaur classification
+        strings.DAIDE: parsing.OptionalValueType(str)        # optional DAIDE message
     }
 
     def __init__(self, **kwargs):
@@ -84,6 +85,7 @@ class Message(Jsonable):
         self.message = None                 # type: str
         self.truth = None                   # type: str
         self.type = None                    # type: str
+        self.daide = None                   # type: str
         super(Message, self).__init__(**kwargs)
 
     def __str__(self):
