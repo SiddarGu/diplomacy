@@ -485,11 +485,12 @@ export class ContentGame extends React.Component {
         );
     }
 
-    notifiedNetworkGame(networkGame, notification) {
+    async notifiedNetworkGame(networkGame, notification) {
         if (this.networkGameIsDisplayed(networkGame)) {
             const msg = `Game (${networkGame.local.game_id}) received notification ${notification.name}.`;
             this.reloadDeadlineTimer(networkGame);
-            return this.forceUpdate().then(() => this.getPage().info(msg));
+            await this.forceUpdate();
+            return this.getPage().info(msg);
         }
         return noPromise();
     }
@@ -574,7 +575,7 @@ export class ContentGame extends React.Component {
             );
     }
 
-    notifiedNewGameMessage(networkGame, notification) {
+    async notifiedNewGameMessage(networkGame, notification) {
         let protagonist = notification.message.sender;
         if (notification.message.recipient === "GLOBAL")
             protagonist = notification.message.recipient;
@@ -592,9 +593,8 @@ export class ContentGame extends React.Component {
         } else {
             ++messageHighlights["messages"];
         }
-        return this.setState({ messageHighlights: messageHighlights }).then(
-            () => this.notifiedNetworkGame(networkGame, notification)
-        );
+        await this.setState({ messageHighlights: messageHighlights });
+        return await this.notifiedNetworkGame(networkGame, notification);
     }
 
     bindCallbacks(networkGame) {
@@ -760,7 +760,7 @@ export class ContentGame extends React.Component {
         networkGame.sendOrderLog({ log: message });
     }
 
-    async handleRecipientAnnotation(message_time_sent, annotation) {
+    handleRecipientAnnotation(message_time_sent, annotation) {
         const engine = this.props.data;
         const newAnnotatedMessages = {
             ...this.state.annotatedMessages,
@@ -769,7 +769,7 @@ export class ContentGame extends React.Component {
         };
         this.setState({ annotatedMessages: newAnnotatedMessages });
 
-        await this.sendRecipientAnnotation(
+        this.sendRecipientAnnotation(
             engine.client,
             message_time_sent,
             annotation
@@ -806,7 +806,7 @@ export class ContentGame extends React.Component {
         }); // sync numReadCommentary with numAllCommentary and hide badge
     }
 
-    async sendRecipientAnnotation(networkGame, time_sent, annotation) {
+    sendRecipientAnnotation(networkGame, time_sent, annotation) {
         const page = this.getPage();
         const info = { time_sent: time_sent, annotation: annotation };
 
@@ -849,7 +849,7 @@ export class ContentGame extends React.Component {
         networkGame.sendDeceiving({ info: info });
     }
 
-    async sendMessage(networkGame, recipient, body, deception, daide) {
+    sendMessage(networkGame, recipient, body, deception, daide) {
         const page = this.getPage();
 
         // make sure the message is not empty
@@ -1958,15 +1958,15 @@ export class ContentGame extends React.Component {
                                           engine.role === "master_type" || 
                                           this.state.annotatedMessages.hasOwnProperty(
                                             msg.time_sent)}
-                                onClick={async () => {
-                                    await this.sendMessage(
+                                onClick={() => {
+                                    this.sendMessage(
                                         engine.client,
                                         currentTabId,
                                         "yes",
                                         null,
                                         "YES ( " + msg.daide + " )"
                                     );
-                                    await this.handleRecipientAnnotation(
+                                    this.handleRecipientAnnotation(
                                         msg.time_sent,
                                         "yes"
                                     );
@@ -1982,15 +1982,15 @@ export class ContentGame extends React.Component {
                                           engine.role === "master_type" || 
                                           this.state.annotatedMessages.hasOwnProperty(
                                             msg.time_sent)}
-                                onClick={async () => {
-                                    await this.sendMessage(
+                                onClick={() => {
+                                    this.sendMessage(
                                         engine.client,
                                         currentTabId,
                                         "no",
                                         null,
                                         "REJ ( " + msg.daide + " )"
                                     );
-                                    await this.handleRecipientAnnotation(
+                                    this.handleRecipientAnnotation(
                                         msg.time_sent,
                                         "rej"
                                     );
@@ -2021,8 +2021,8 @@ export class ContentGame extends React.Component {
                                                 msg.time_sent
                                             ] === "yes"
                                         }
-                                        onClick={async () => {
-                                            await this.handleRecipientAnnotation(
+                                        onClick={() => {
+                                            this.handleRecipientAnnotation(
                                                 msg.time_sent,
                                                 "yes"
                                             );
@@ -2046,8 +2046,8 @@ export class ContentGame extends React.Component {
                                                 msg.time_sent
                                             ] === "None"
                                         }
-                                        onClick={async () =>
-                                            await this.handleRecipientAnnotation(
+                                        onClick={() =>
+                                            this.handleRecipientAnnotation(
                                                 msg.time_sent,
                                                 "None"
                                             )
@@ -2147,15 +2147,15 @@ export class ContentGame extends React.Component {
                                             pickEvent={true}
                                             title={"Truth"}
                                             color={"success"}
-                                            onClick={async () => {
-                                                await this.sendMessage(
+                                            onClick={() => {
+                                                this.sendMessage(
                                                     engine.client,
                                                     currentTabId,
                                                     this.state.message,
                                                     "Truth",
                                                     null
                                                 );
-                                                await this.setMessageInputValue("");
+                                                this.setMessageInputValue("");
                                             }}
                                         ></Button>
                                         <Button
@@ -2163,15 +2163,15 @@ export class ContentGame extends React.Component {
                                             pickEvent={true}
                                             title={"Lie"}
                                             color={"danger"}
-                                            onClick={async () => {
-                                                await this.sendMessage(
+                                            onClick={() => {
+                                                this.sendMessage(
                                                     engine.client,
                                                     currentTabId,
                                                     this.state.message,
                                                     "Lie",
                                                     null
                                                 );
-                                                await this.setMessageInputValue("");
+                                                this.setMessageInputValue("");
                                             }}
                                         ></Button>
                                         <Button
@@ -2179,15 +2179,15 @@ export class ContentGame extends React.Component {
                                             pickEvent={true}
                                             title={"Neutral"}
                                             color={"primary"}
-                                            onClick={async () => {
-                                                await this.sendMessage(
+                                            onClick={() => {
+                                                this.sendMessage(
                                                     engine.client,
                                                     currentTabId,
                                                     this.state.message,
                                                     "Neutral",
                                                     null
                                                 );
-                                                await this.setMessageInputValue("");
+                                                this.setMessageInputValue("");
                                             }}
                                         ></Button>
                                     </>
@@ -2692,12 +2692,12 @@ export class ContentGame extends React.Component {
                                                                 color={
                                                                     "success"
                                                                 }
-                                                                onClick={async () => {
-                                                                    await this.setMessageInputValue(
+                                                                onClick={() => {
+                                                                    this.setMessageInputValue(
                                                                         msg.message
                                                                     );
 
-                                                                    await this.handleRecipientAnnotation(
+                                                                    this.handleRecipientAnnotation(
                                                                         msg.time_sent,
                                                                         "accept"
                                                                     );
@@ -2719,8 +2719,8 @@ export class ContentGame extends React.Component {
                                                                     "dismiss"
                                                                 }
                                                                 color={"danger"}
-                                                                onClick={async () => {
-                                                                    await this.handleRecipientAnnotation(
+                                                                onClick={() => {
+                                                                    this.handleRecipientAnnotation(
                                                                         msg.time_sent,
                                                                         "reject"
                                                                     );
@@ -2960,7 +2960,7 @@ export class ContentGame extends React.Component {
                                             move
                                         );
 
-                                        await this.handleRecipientAnnotation(
+                                        this.handleRecipientAnnotation(
                                             latestMoveSuggestionFull.time_sent,
                                             `accept ${move}`
                                         );
@@ -3026,7 +3026,7 @@ export class ContentGame extends React.Component {
                                         );
                                     }
 
-                                    await this.handleRecipientAnnotation(
+                                    this.handleRecipientAnnotation(
                                         latestMoveSuggestionFull.time_sent,
                                         "accept all"
                                     );
@@ -3038,8 +3038,8 @@ export class ContentGame extends React.Component {
                                 pickEvent={true}
                                 title={"dismiss"}
                                 color={"danger"}
-                                onClick={async () => {
-                                    await this.handleRecipientAnnotation(
+                                onClick={() => {
+                                    this.handleRecipientAnnotation(
                                         latestMoveSuggestionFull.time_sent,
                                         "reject"
                                     );
@@ -3100,7 +3100,7 @@ export class ContentGame extends React.Component {
                                             move
                                         );
 
-                                        await this.handleRecipientAnnotation(
+                                        this.handleRecipientAnnotation(
                                             latestMoveSuggestionPartial.time_sent,
                                             `accept ${move}`
                                         );
@@ -3164,7 +3164,7 @@ export class ContentGame extends React.Component {
                                         );
                                     }
 
-                                    await this.handleRecipientAnnotation(
+                                    this.handleRecipientAnnotation(
                                         latestMoveSuggestionPartial.time_sent,
                                         "accept all"
                                     );
@@ -3176,8 +3176,8 @@ export class ContentGame extends React.Component {
                                 pickEvent={true}
                                 title={"dismiss"}
                                 color={"danger"}
-                                onClick={async () => {
-                                    await this.handleRecipientAnnotation(
+                                onClick={() => {
+                                    this.handleRecipientAnnotation(
                                         latestMoveSuggestionPartial.time_sent,
                                         "reject"
                                     );
