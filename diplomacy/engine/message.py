@@ -65,7 +65,7 @@ class Message(Jsonable):
         are stored on server. Therefore, message timestamp is the time when server stores the message, not the time
         when message was sent by any client.
     """
-    __slots__ = ['sender', 'recipient', 'time_sent', 'phase', 'message', 'truth', 'type']
+    __slots__ = ['sender', 'recipient', 'time_sent', 'phase', 'message', 'truth', 'type', 'daide']
     model = {
         strings.SENDER: str,                                # either SYSTEM or a power name.
         strings.RECIPIENT: str,                             # either GLOBAL, OBSERVER, OMNISCIENT or a power name.
