@@ -1972,9 +1972,7 @@ export class ContentGame extends React.Component {
                                 pickEvent={true}
                                 title={"Yes"}
                                 color={"success"}
-                                disabled={engine.role === "omniscient_type" ||
-                                          engine.role === "observer_type" ||
-                                          engine.role === "master_type" || 
+                                disabled={
                                           this.state.annotatedMessages.hasOwnProperty(
                                             msg.time_sent)}
                                 onClick={() => {
@@ -1989,16 +1987,16 @@ export class ContentGame extends React.Component {
                                         "yes"
                                     );
                                 }}
+                                invisible={engine.role === "omniscient_type" ||
+                                    engine.role === "observer_type" ||
+                                    engine.role === "master_type"}
                             ></Button>
                             <Button
                                 key={"f"}
                                 pickEvent={true}
                                 title={"No"}
                                 color={"danger"}
-                                disabled={engine.role === "omniscient_type" ||
-                                          engine.role === "observer_type" ||
-                                          engine.role === "master_type" || 
-                                          this.state.annotatedMessages.hasOwnProperty(
+                                disabled={this.state.annotatedMessages.hasOwnProperty(
                                             msg.time_sent)}
                                 onClick={() => {
                                     this.sendMessage(
@@ -2012,6 +2010,9 @@ export class ContentGame extends React.Component {
                                         "rej"
                                     );
                                 }}
+                                invisible={engine.role === "omniscient_type" ||
+                                    engine.role === "observer_type" ||
+                                    engine.role === "master_type"}
                             ></Button>
                         </Row>
                     );
