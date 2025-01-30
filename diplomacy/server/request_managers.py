@@ -62,7 +62,7 @@ def on_get_order_distribution(server, request, connection_handler):
     requested_province = request.province
     model = DISTRIBUTION_MODELS.get(request.model)
     if model:
-        preds = model(game_state, requested_province).predict(top_k=6)
+        preds = model(game_state, requested_province).predict(top_k=10)
     return responses.DataSavedGame(data=preds, request_id=request.request_id)
 
 def on_clear_centers(server, request, connection_handler):

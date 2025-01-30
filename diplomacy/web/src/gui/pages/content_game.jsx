@@ -171,8 +171,10 @@ export class ContentGame extends React.Component {
         }
         this.schedule_timeout_id = null;
 
+        // For each power, track type of distribution advice ('N'-none, 'V'-visual, 'T'-textual) 
+        // and model name
         this.distribution_advice = {
-            'AUSTRIA': {}, 
+            'AUSTRIA': {}, // { display_mode: 'N'/'V'/'T', model: str }
             'ENGLAND': {},
             'FRANCE': {},
             'GERMANY': {}, 
@@ -180,7 +182,6 @@ export class ContentGame extends React.Component {
             'RUSSIA': {}, 
             'TURKEY': {},
         }
-
         for (const power in this.props.data.distribution_advice){
             if (!this.props.data.distribution_advice.hasOwnProperty(power))
                 continue
@@ -197,10 +198,9 @@ export class ContentGame extends React.Component {
             historyShowOrders: true,
             historyCurrentLoc: null,
             historyCurrentOrders: null,
-            distributionAdviceSetting: {},
-            shiftKeyPressed: [false, null],
-            orderDistribution: {},
-            hoverDistributionOrder: [],
+            distributionAdviceSetting: {}, // { display_mode: 'N'/'V'/'T', model: str } where 'N'-none, 'V'-visual, 'T'-textual
+            orderDistribution: {}, // { power: str, distribution: {order => {opacity: float, rank: int, pred_prob: float},...} }
+            hoverDistributionOrder: [], // the order hovered upon in the list of textual distribution advice
             orders: orders, // {power name => {loc => {local: bool, order: str}}}
             power: null,
             orderBuildingType: null,
@@ -354,29 +354,6 @@ export class ContentGame extends React.Component {
             power: powerName,
             builder: orderType && ORDER_BUILDER[orderType],
         };
-    }
-
-    static getAllOrderableLocations(allowedPowerOrderTypes, orderTypeToLocs) {
-        /**
-         * Used for the model prediction (P) mode (i.e., visualising order distributions) for displaying 
-         * the text description that lists the orderable locations
-         * 
-         * :param allowedPowerOrderTypes (string[]||null) - all the allowed order types of the controlling power
-         * :param orderTypeToLocs (object) - keys are the allowed order types
-         * 
-         * Return:
-         * a string that lists the orderable locations with ',' as separator 
-         */
-        const orderableLocs = new Set()
-        for (var orderType of allowedPowerOrderTypes){
-            if (!orderTypeToLocs.hasOwnProperty(orderType)){
-                continue;
-            }
-            orderTypeToLocs[orderType].forEach((x) => {
-                orderableLocs.add(x);
-            });
-        }
-        return Array.from(orderableLocs).join(", ");
     }
 
     setState(state) {
@@ -727,14 +704,24 @@ export class ContentGame extends React.Component {
 
     // ]
 
+    /** 
+     * Handler to retrieve model prediction and update current state distribution advice
+     * @param {string} requestedPower  - power requesting the advice
+     * @param {string} requestedProvince - province to get advice for
+     */
     onChangeOrderDistribution(requestedPower, requestedProvince, model){
-        /** handler to retrieve model prediction to render distribution advice*/
+        if (requestedProvince === undefined || requestedProvince === null){
+            this.setState({ orderDistribution: {} });
+            return;
+        }
+        // communicate with server to get model prediction
         this.props.data.client.getOrderDistribution({ power_name: requestedPower, province: requestedProvince, model: model }).then(res => {
             if (res.hasOwnProperty("error")){
                 this.getPage().error(res.error);
             }
             else{
-                this.setState({ orderDistribution: { power: res.power, distribution: res.preds }});
+                // successfully retrieves and updates order distribution
+                this.setState({ orderDistribution: { power: res.power, distribution: res.preds }}); 
             }
         });
     }
@@ -2292,6 +2279,8 @@ export class ContentGame extends React.Component {
         for (let oo of this.state.hoverOrders) {
             orders[powerName].push(oo);
         }
+
+        // Displays hovered textual distribution advice order
         for (let oo of this.state.hoverDistributionOrder){
             if (!orders.hasOwnProperty(this.state.orderDistribution.power)){
                 orders[this.state.orderDistribution.power] = [];
@@ -3663,9 +3652,6 @@ export class ContentGame extends React.Component {
                 );
             }
             this.state.distributionAdviceSetting = this.distribution_advice[currentPowerName] 
-            if (Object.keys(this.state.distributionAdviceSetting).length > 0){
-                allowedPowerOrderTypes.push("P"); // mode for getting order distribution predicted by model
-            }
             if (allowedPowerOrderTypes.length) {
                 if (
                     this.state.orderBuildingType &&
@@ -3735,8 +3721,7 @@ export class ContentGame extends React.Component {
                 {(allowedPowerOrderTypes.length && (
                     <span>
                         <strong>Orderable locations</strong>:{" "}
-                        {(orderBuildingType !== "P" && orderTypeToLocs[orderBuildingType].join(", ")) 
-                        || ContentGame.getAllOrderableLocations(allowedPowerOrderTypes,orderTypeToLocs) }
+                        {orderTypeToLocs[orderBuildingType].join(", ")}
                     </span>
                 )) || <strong>&nbsp;No orderable location.</strong>}
                 {phaseType === "A" &&
@@ -3917,16 +3902,6 @@ export class ContentGame extends React.Component {
         this.props.data.displayed = true;
         // Try to prevent scrolling when pressing keys Home and End.
         document.onkeydown = (event) => {
-            if (event.key.toLowerCase() === "shift"){
-                let currOrderBuildingType = this.state.orderBuildingType;
-                this.setState({ 
-                    shiftKeyPressed: [ true, currOrderBuildingType ], 
-                    orderBuildingType: "P",
-                    orderBuildingPath: [],
-                    orderDistribution: {},
-                    hoverDistributionOrder: []
-                } );
-            }
             if (["home", "end"].includes(event.key.toLowerCase())) {
                 // Try to prevent scrolling.
                 if (event.hasOwnProperty("cancelBubble"))
@@ -3941,17 +3916,6 @@ export class ContentGame extends React.Component {
         window.addEventListener("blur", this.handleBlur);
         window.addEventListener("focus", this.handleFocus);
         this.state.lastSwitchPanelTime = Date.now();
-        document.onkeyup = (event) => {
-            if (event.key.toLowerCase() === "shift"){
-                let prevOrderBuildingType = this.state.shiftKeyPressed[1];
-                this.setState({ shiftKeyPressed: [ false, null ],  
-                    orderBuildingType: prevOrderBuildingType,
-                    orderBuildingPath: [],
-                    orderDistribution: {},
-                    hoverDistributionOrder: []
-                 } );
-            }
-        };
 
     }
 

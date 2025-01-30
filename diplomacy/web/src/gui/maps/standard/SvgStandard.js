@@ -51,22 +51,21 @@ export class SvgStandard extends React.Component {
         return this.handleHoverID(getClickedID(event)); 
     }
 
-
+    /**
+     * Update predictions for displaying the order distribution in the selected province
+     * @param orderBuilding 
+     * @param {Province} province - province hovered upon
+     */
     onPrediction(orderBuilding, province){
-        /**
-         * Update predictions for displaying the order distribution in the selected province
-         */
-        const localGame = this.props.game; //Game Object
+        const localGame = this.props.game; // Game Object
         const phaseType = localGame.phase.slice(-1); // 'M'/'A'/'R' - movement/adjustment/retreat
         const requestedPower = orderBuilding.power;
         var requestedProvince = '';
         const COUNTRIES = ['Austria', 'England', 'France', 'Germany', 'Italy', 'Russia', 'Turkey'];
 
-        /** Get correct naming of province*/
-        // get all possible orderable locations in the game tree
-
+        /* Get correct naming of province*/
         if (phaseType === 'M'){
-            /** MOVEMENT PHASE */
+            /* MOVEMENT PHASE */
             for (const power of COUNTRIES){
                 var occupiedProvince = province.getOccupied(power.toUpperCase());
                 if (occupiedProvince){
@@ -76,7 +75,7 @@ export class SvgStandard extends React.Component {
             }
         }
         else if (phaseType === 'R'){
-            /**RETREAT PHASE */
+            /* RETREAT PHASE */
             for (const power of COUNTRIES){
                 var retreatProvince = province.getRetreated(power.toUpperCase())
                 if (retreatProvince){
@@ -86,13 +85,14 @@ export class SvgStandard extends React.Component {
             }
         }
         else {
-            /** ADJUSTMENT PHASE */
+            /* ADJUSTMENT PHASE */
             const orderTypes = POSSIBLE_ORDERS['A'];
             const possibleOrders = this.props.game.ordersTree;
             const orderableLocations = new Set();
 
             for (const type of orderTypes){
-                const orderTypeLocations = UTILS.javascript.getTreeValue(possibleOrders, type);
+                // get all possible orderable locations in the game tree
+                const orderTypeLocations = UTILS.javascript.getTreeValue(possibleOrders, type); 
                 if (orderTypeLocations !== null){
                     orderTypeLocations.forEach((x) => {
                         if (type === 'D'){
@@ -113,9 +113,9 @@ export class SvgStandard extends React.Component {
                 }
             }
         }
-        
         if (requestedProvince === ''){
-            return this.props.onError(`No orderable locations at province ${province.name}`);
+            this.props.onError(`No orderable locations at province ${province.name}`);
+            return this.props.onChangeOrderDistribution(requestedPower, null, null);
         }
 
         return this.props.onChangeOrderDistribution(requestedPower, requestedProvince, this.props.distributionAdviceSetting?.model);
@@ -126,19 +126,13 @@ export class SvgStandard extends React.Component {
             return this.props.onError('No orderable locations.'); 
         const province = this.props.mapData.getProvince(id); 
         if (!province) 
-            throw new Error(`Cannot find a province named ${id}`); 
-
-        if (orderBuilding['type'] === 'P'){
-            /** order bulding type is set to getting order distribution predicted by model */
-            this.onPrediction(orderBuilding, province);
-            return;
-        }
+            throw new Error(`Cannot find a province named ${id}`);
 
         const stepLength = orderBuilding.builder.steps.length; 
         if (orderBuilding.path.length >= stepLength) 
             throw new Error(`Order building: current steps count (${orderBuilding.path.length}) should be less than  expected steps count (${stepLength}) (${orderBuilding.path.join(', ')}).`); 
         const lengthAfterClick = orderBuilding.path.length + 1; 
-        let validLocations = []; 
+        let validLocations = [];
         const testedPath = [orderBuilding.type].concat(orderBuilding.path); 
         const value = UTILS.javascript.getTreeValue(this.props.game.ordersTree, testedPath); 
         if (value !== null) { 
@@ -153,10 +147,10 @@ export class SvgStandard extends React.Component {
             } catch (error) { 
                 return this.props.onError(error); 
             } 
-        } 
+        }
         if (!validLocations.length)
-            return this.props.onError('Disallowed.'); 
-        
+            return this.props.onError('Disallowed.');
+
         if (validLocations.length > 1 && orderBuilding.type === 'S' && orderBuilding.path.length >= 2) { 
             /* We are building a support order and we have a multiple choice for a location. */ 
             /* Let's check if next location to choose is a coast. To have a coast: */ 
@@ -186,7 +180,7 @@ export class SvgStandard extends React.Component {
                 /* We want to choose location in a coastal province. Let's remove province name. */ 
                 validLocations = validLocationsNoProvinceName; 
             } 
-        } 
+        }
         if (validLocations.length > 1) {
             if (this.props.onSelectLocation) {
                 return this.props.onSelectLocation(validLocations, orderBuilding.power, orderBuilding.type, orderBuilding.path); 
@@ -219,14 +213,33 @@ export class SvgStandard extends React.Component {
             this.props.onError
         );
     } 
-    handleHoverID(id) { 
+
+    handleHoverID(id) {
         if (this.props.onHover) { 
-            const province = this.props.mapData.getProvince(id); 
-            if (province) { 
-                this.props.onHover(province.name, this.getRelatedOrders(province.name)); 
-            } 
-        } 
-    } 
+            const province = this.props.mapData.getProvince(id);
+            if (province){
+                this.props.onHover(province.name, this.getRelatedOrders(province.name));
+                return
+            }
+        }
+
+        const distributionAdviceMode = this.props.distributionAdviceSetting?.display_mode
+        if (distributionAdviceMode === "V" || distributionAdviceMode === "T"){
+            const province = this.props.mapData.getProvince(id);
+            if (! province){ // not a province
+                return
+            }
+            const orderBuilding = this.props.orderBuilding;
+            /* 
+             * Only update distribution advice if when one of the following cases apply:
+             * 1. No possible orders to fill but hovered to view other powers' advice in the selected province
+             * 2. Have not begun to make a order and hovered to view advice in selected province (prevents advice flickering/changing when making orders, e.g., when making support orders)
+             */ 
+            if (!orderBuilding.builder || orderBuilding.path.length === 0){
+                this.onPrediction(orderBuilding, province);
+            }
+        }
+}
     getRelatedOrders(name) { 
         const orders = []; 
         if (this.props.orders) { 
@@ -250,16 +263,16 @@ export class SvgStandard extends React.Component {
         return neighbors.length ? neighbors: null; 
     }
 
-    renderOrder(orderType, order, powerName, game, opacity){
-        /**
-         * moved original logic in render() for rendering orders to this function
-         * 
-         * :param order: the order string
-         * :param powerName: the name (str) of the power for this order
-         * :param game: Game object of the current game
-         * :param opacity: the opacity of the current order
-         */
-
+    /**
+     * Copied and modified original logic in render() for rendering orders 
+     * to render distribution advice order with specified opacity
+     * @param {string} order - Order string
+     * @param {string} powerName - Name of the power for this order
+     * @param {Game} game - Game object of the current game
+     * @param {float} opacity - The opacity of the current order
+     * @returns renderComponents - Json object that stores the order component into the corresponding order rendering list
+     */
+    renderOrderFromDist(order, powerName, game, opacity){
         var renderComponents = {
             renderedOrders: [],
             renderedOrders2: [],
@@ -273,7 +286,7 @@ export class SvgStandard extends React.Component {
         const unit_loc = tokens[1]; 
         if (tokens[2] === 'H') { 
             renderComponents.renderedOrders.push( 
-                <Hold key={orderType !== "P" ? order : `P:${order}`} 
+                <Hold key={`P:${order}`} 
                       opacity={opacity}
                       loc={unit_loc} 
                       powerName={powerName} 
@@ -284,7 +297,7 @@ export class SvgStandard extends React.Component {
         } else if (tokens[2] === '-') { 
             const destLoc = tokens[tokens.length - (tokens[tokens.length - 1] === 'VIA' ? 2 : 1)]; 
             renderComponents.renderedOrders.push( 
-                <Move key={orderType !== "P" ? order : `P:${order}`} 
+                <Move key={`P:${order}`} 
                       opacity={opacity}
                       srcLoc={unit_loc} 
                       dstLoc={destLoc} 
@@ -299,7 +312,7 @@ export class SvgStandard extends React.Component {
             if (tokens.includes('-')) { 
                 const srcLoc = tokens[4]; 
                 renderComponents.renderedOrders2.push( 
-                    <SupportMove key={orderType !== "P" ? order : `P:${order}`} 
+                    <SupportMove key={`P:${order}`} 
                                  opacity={opacity} 
                                  loc={unit_loc} 
                                  srcLoc={srcLoc} 
@@ -311,7 +324,7 @@ export class SvgStandard extends React.Component {
             ); 
             } else { 
                 renderComponents.renderedOrders2.push(
-                    <SupportHold key={orderType !== "P" ? order : `P:${order}`} 
+                    <SupportHold key={`P:${order}`} 
                                  opacity={opacity}
                                  loc={unit_loc} 
                                  dstLoc={destLoc} 
@@ -326,7 +339,7 @@ export class SvgStandard extends React.Component {
             const destLoc = tokens[tokens.length - 1]; 
             if ((srcLoc !== destLoc) && (tokens.includes('-'))) { 
                 renderComponents.renderedOrders2.push( 
-                    <Convoy key={orderType !== "P" ? order : `P:${order}`}  
+                    <Convoy key={`P:${order}`}  
                             opacity={opacity}
                             loc={unit_loc} 
                             srcLoc={srcLoc} 
@@ -339,7 +352,7 @@ export class SvgStandard extends React.Component {
             } 
         } else if (tokens[2] === 'B') { 
             renderComponents.renderedHighestOrders.push( 
-                <Build key={orderType !== "P" ? order : `P:${order}`} 
+                <Build key={`P:${order}`} 
                        opacity={opacity}
                        unitType={tokens[0]} 
                        loc={unit_loc} 
@@ -349,7 +362,7 @@ export class SvgStandard extends React.Component {
             ); 
         } else if (tokens[2] === 'D') { 
             renderComponents.renderedHighestOrders.push( 
-                <Disband key={orderType !== "P" ? order : `P:${order}`} 
+                <Disband key={`P:${order}`} 
                          opacity={opacity}
                          loc={unit_loc} 
                          phaseType={game.getPhaseType()} 
@@ -359,7 +372,7 @@ export class SvgStandard extends React.Component {
         } else if (tokens[2] === 'R') { 
             const destLoc = tokens[3]; 
             renderComponents.renderedOrders.push( 
-                <Move key={orderType !== "P" ? order : `P:${order}`} 
+                <Move key={`P:${order}`} 
                       opacity={opacity}
                       srcLoc={unit_loc} 
                       dstLoc={destLoc} 
@@ -427,6 +440,7 @@ export class SvgStandard extends React.Component {
                 ); 
             } 
 
+            /* Modify classname to display light background */
             for (let classKey of Object.keys(classes)){
                 if (classes.hasOwnProperty(classKey)){
                     if (classes[classKey] === "nopower" || classes[classKey] === "water" || classes[classKey] === "neutral"){
@@ -547,12 +561,12 @@ export class SvgStandard extends React.Component {
             } 
         } 
 
+        /* If can display visual distribution advice, push the corresponding advice order components for rendering */
         if (this.props.orderDistribution && this.props.distributionAdviceSetting?.display_mode === "V"){
             var orderDistribution = this.props.orderDistribution.distribution
             for (var order in orderDistribution){
                 if (orderDistribution.hasOwnProperty(order)){
-                    const component = this.renderOrder(
-                        this.props.orderBuilding.type,
+                    const component = this.renderOrderFromDist(
                         order,
                         this.props.orderDistribution.power,
                         game,
@@ -606,7 +620,8 @@ export class SvgStandard extends React.Component {
 SvgStandard.propTypes = { 
     game: PropTypes.instanceOf(Game).isRequired, 
     mapData: PropTypes.instanceOf(MapData).isRequired, 
-    orders: PropTypes.object, onHover: PropTypes.func, 
+    orders: PropTypes.object, 
+    onHover: PropTypes.func, 
     onError: PropTypes.func.isRequired, 
     onSelectLocation: PropTypes.func, 
     onSelectVia: PropTypes.func,
