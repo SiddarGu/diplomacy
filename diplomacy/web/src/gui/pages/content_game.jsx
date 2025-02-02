@@ -2950,18 +2950,12 @@ export class ContentGame extends React.Component {
                             onMouseLeave={() => {
                                 this.setState({ hoverOrders: [] });
                             }}
+                            key={index}
                         >
-                            <ChatMessage
-                                style={{ flexGrow: 1 }}
-                                model={{
-                                    message: move,
-                                    sent: latestMoveSuggestionFull.time_sent,
-                                    sender: latestMoveSuggestionFull.sender,
-                                    direction: "incoming",
-                                    position: "single",
-                                }}
-                                avatarPosition={"tl"}
-                            ></ChatMessage>
+
+                            <div className={'col align-self-center order'}>
+                                    <span className={'order-string'}>{move}</span>
+                            </div>
                             <div
                                 style={{
                                     flexGrow: 0,
@@ -2970,13 +2964,8 @@ export class ContentGame extends React.Component {
                                     alignItems: "flex-end",
                                 }}
                             >
-                                <Button
-                                    key={"a"}
-                                    pickEvent={true}
-                                    title={"accept"}
-                                    color={"success"}
-                                    onClick={() => {
-                                        this.onOrderBuilt(
+                                <Button title={"+"} color={"success"} onClick={async () => {
+                                        await this.onOrderBuilt(
                                             currentPowerName,
                                             move
                                         );
@@ -2985,12 +2974,7 @@ export class ContentGame extends React.Component {
                                             latestMoveSuggestionFull.time_sent,
                                             `accept ${move}`
                                         );
-                                    }}
-                                    invisible={!(isCurrent && !isAdmin)}
-                                    //disabled={this.state.annotatedMessages.hasOwnProperty(
-                                    //  latestMoveSuggestionFull.time_sent,
-                                    //)}
-                                ></Button>
+                                    }} invisible={!(isCurrent && !isAdmin)}></Button>
                             </div>
                         </div>
                     );
@@ -3015,31 +2999,18 @@ export class ContentGame extends React.Component {
                             this.setState({ hoverOrders: [] });
                         }}
                     >
-                        <ChatMessage
-                            style={{ flexGrow: 1 }}
-                            model={{
-                                message: "Full Suggestions:",
-                                sent: latestMoveSuggestionFull.time_sent,
-                                sender: latestMoveSuggestionFull.sender,
-                                direction: "incoming",
-                                position: "single",
-                            }}
-                            avatarPosition={"tl"}
-                        ></ChatMessage>
-                        <div
-                            style={{
-                                flexGrow: 0,
-                                flexShrink: 0,
-                                display: "flex",
-                                alignItems: "flex-end",
-                            }}
+                        <div className={'col align-self-center order'}>
+                                    <span className={'order-string'}>Full:</span>
+                        </div>
+                        <div 
+                        style={{
+                            flexGrow: 0,
+                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "flex-end",
+                        }}
                         >
-                            <Button
-                                key={"a"}
-                                pickEvent={true}
-                                title={"accept all"}
-                                color={"success"}
-                                onClick={async () => {
+                        <Button title={'+all'} color={"success"} onClick={async () => {
                                     for (let move of latestMoveSuggestionFull.moves) {
                                         await this.onOrderBuilt(
                                             currentPowerName,
@@ -3052,21 +3023,15 @@ export class ContentGame extends React.Component {
                                         "accept all"
                                     );
                                 }}
-                                invisible={!(isCurrent && !isAdmin)}
-                            ></Button>
-                            <Button
-                                key={"r"}
-                                pickEvent={true}
-                                title={"dismiss"}
-                                color={"danger"}
+                                invisible={!(isCurrent && !isAdmin)}/>
+                        <Button title={String.fromCharCode(0x2715)} color={"danger"}
                                 onClick={() => {
                                     this.handleRecipientAnnotation(
                                         latestMoveSuggestionFull.time_sent,
                                         "reject"
                                     );
                                 }}
-                                invisible={!(isCurrent && !isAdmin)}
-                            ></Button>
+                                invisible={!(isCurrent && !isAdmin)}></Button>
                         </div>
                     </div>
                     {fullSuggestionMessages}
@@ -3090,18 +3055,11 @@ export class ContentGame extends React.Component {
                             onMouseLeave={() => {
                                 this.setState({ hoverOrders: [] });
                             }}
+                            key={index}
                         >
-                            <ChatMessage
-                                style={{ flexGrow: 1 }}
-                                model={{
-                                    message: move,
-                                    sent: latestMoveSuggestionPartial.time_sent,
-                                    sender: latestMoveSuggestionPartial.sender,
-                                    direction: "incoming",
-                                    position: "single",
-                                }}
-                                avatarPosition={"tl"}
-                            ></ChatMessage>
+                            <div className={'col align-self-center order'}>
+                                    <span className={'order-string'}>{move}</span>
+                            </div>
                             <div
                                 style={{
                                     flexGrow: 0,
@@ -3110,13 +3068,9 @@ export class ContentGame extends React.Component {
                                     alignItems: "flex-end",
                                 }}
                             >
-                                <Button
-                                    key={"a"}
-                                    pickEvent={true}
-                                    title={"accept"}
-                                    color={"success"}
-                                    onClick={() => {
-                                        this.onOrderBuilt(
+
+                                <Button title={"+"} color={"success"} onClick={async () => {
+                                        await this.onOrderBuilt(
                                             currentPowerName,
                                             move
                                         );
@@ -3126,8 +3080,7 @@ export class ContentGame extends React.Component {
                                             `accept ${move}`
                                         );
                                     }}
-                                    invisible={!(isCurrent && !isAdmin)}
-                                ></Button>
+                                    invisible={!(isCurrent && !isAdmin)}></Button>
                             </div>
                         </div>
                     );
@@ -3151,20 +3104,12 @@ export class ContentGame extends React.Component {
                             this.setState({ hoverOrders: [] });
                         }}
                     >
-                        <ChatMessage
-                            style={{ flexGrow: 1 }}
-                            model={{
-                                message: `Suggestions based on ${latestMoveSuggestionPartial.givenMoves.join(
+                        <div className={'col align-self-center order'}>
+                                    <span className={'order-string'}>Based on {latestMoveSuggestionPartial.givenMoves.join(
                                     ", "
-                                )}:`,
-                                sent: latestMoveSuggestionPartial.time_sent,
-                                sender: latestMoveSuggestionPartial.sender,
-                                direction: "incoming",
-                                position: "single",
-                            }}
-                            avatarPosition={"tl"}
-                        ></ChatMessage>
-                        <div
+                                )}</span>
+                        </div>
+                        <div 
                             style={{
                                 flexGrow: 0,
                                 flexShrink: 0,
@@ -3172,12 +3117,7 @@ export class ContentGame extends React.Component {
                                 alignItems: "flex-end",
                             }}
                         >
-                            <Button
-                                key={"a"}
-                                pickEvent={true}
-                                title={"accept all"}
-                                color={"success"}
-                                onClick={async () => {
+                        <Button title={'+all'} color={"success"} onClick={async () => {
                                     for (let move of latestMoveSuggestionPartial.moves) {
                                         await this.onOrderBuilt(
                                             currentPowerName,
@@ -3190,21 +3130,15 @@ export class ContentGame extends React.Component {
                                         "accept all"
                                     );
                                 }}
-                                invisible={!(isCurrent && !isAdmin)}
-                            ></Button>
-                            <Button
-                                key={"r"}
-                                pickEvent={true}
-                                title={"dismiss"}
-                                color={"danger"}
+                                invisible={!(isCurrent && !isAdmin)}/>
+                        <Button title={String.fromCharCode(0x2715)} color={"danger"}
                                 onClick={() => {
                                     this.handleRecipientAnnotation(
                                         latestMoveSuggestionPartial.time_sent,
                                         "reject"
                                     );
                                 }}
-                                invisible={!(isCurrent && !isAdmin)}
-                            ></Button>
+                                invisible={!(isCurrent && !isAdmin)}></Button>
                         </div>
                     </div>
                     {partialSuggestionMessages}
@@ -3222,7 +3156,7 @@ export class ContentGame extends React.Component {
         }
 
         return (
-            <div className={"col-4 mb-4"}>
+            <div className={"col-3 mb-4"}>
                 {suggestionType === null && (
                     <div>
                         We haven't assigned advisors yet / No advisor for this
@@ -3239,24 +3173,18 @@ export class ContentGame extends React.Component {
                     </div>
                 )}
                 {suggestionType !== null && (suggestionType & 2) === 2 && (
-                    <ChatContainer
-                        style={{
-                            display: "flex",
-                            border: "1px solid black",
-                            boxSizing: "border-box",
-                        }}
-                    >
-                        <ConversationHeader>
-                            <ConversationHeader.Content
-                                userName={`Moves Advice for ${engine.phase}`}
-                            />
-                        </ConversationHeader>
-
-                        <MessageList>
-                            {fullSuggestionComponent}
-                            {partialSuggestionComponent}
-                        </MessageList>
-                    </ChatContainer>
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                border: "1px solid black",
+                                boxSizing: "border-box",
+                                marginTop: "10px",
+                            }}
+                        >
+                        {fullSuggestionComponent}
+                        {partialSuggestionComponent}
+                        </div>                    
                 )}
             </div>
         );
