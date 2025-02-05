@@ -1961,7 +1961,7 @@ export class ContentGame extends React.Component {
                 // if is a daide proposal
                 if (msg.type && msg.type === "daide") {
                     renderedMessages.push(
-                        <Row style={{}} id={messageId}>
+                        <Row style={{}} id={`${messageId}-row`}>
                             <Button
                                 key={"t"}
                                 pickEvent={true}
@@ -2025,13 +2025,13 @@ export class ContentGame extends React.Component {
                             }}
                         >
                             Is the above message deceptive?
-                            <div id={messageId}>
+                            <div id={`${messageId}-div`}>
                                 <Col>
                                     <input
                                         type="radio"
                                         value="yes"
-                                        name={messageId}
-                                        defaultChecked={
+                                        name={`${messageId}-radio-yes`}                                    
+                                        checked={
                                             this.state.annotatedMessages.hasOwnProperty(
                                                 msg.time_sent
                                             ) &&
@@ -2039,7 +2039,7 @@ export class ContentGame extends React.Component {
                                                 msg.time_sent
                                             ] === "yes"
                                         }
-                                        onClick={() => {
+                                        onChange={() => {
                                             this.handleRecipientAnnotation(
                                                 msg.time_sent,
                                                 "yes"
@@ -2055,8 +2055,8 @@ export class ContentGame extends React.Component {
                                     <input
                                         type="radio"
                                         value="none"
-                                        name={messageId}
-                                        defaultChecked={
+                                        name={`${messageId}-radio-none`}
+                                        checked={
                                             this.state.annotatedMessages.hasOwnProperty(
                                                 msg.time_sent
                                             ) &&
@@ -2064,7 +2064,7 @@ export class ContentGame extends React.Component {
                                                 msg.time_sent
                                             ] === "None"
                                         }
-                                        onClick={() =>
+                                        onChange={() =>
                                             this.handleRecipientAnnotation(
                                                 msg.time_sent,
                                                 "None"
