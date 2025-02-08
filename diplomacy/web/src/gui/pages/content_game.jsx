@@ -3166,7 +3166,7 @@ export class ContentGame extends React.Component {
 
         return (
             <div className={"col-2 mb-4"}>
-                <div>Get
+                {/* <div>Get
                     <select name={"stance"} id={"stance"}>
                         <option value={"F"}>friendly</option>
                         <option value={"H"}>hostile</option>
@@ -3186,7 +3186,7 @@ export class ContentGame extends React.Component {
                         }}
                     >
                     </Button>
-                </div>
+                </div> */}
                 {suggestionType === null && (
                     <div>
                         No advice for this turn
