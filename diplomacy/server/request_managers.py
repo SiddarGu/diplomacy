@@ -1119,12 +1119,14 @@ def on_send_log_data(server, request, connection_handler):
     level = verify_request(server, request, connection_handler, omniscient_role=True, observer_role=True)
     assert_game_not_finished(level.game)
 
+    token = request.token
+
     log = request.log
 
     if not level.game.is_game_active:
         raise exceptions.GameNotPlayingException()
     log.time_sent = level.game.add_log(log)
-    Notifier(server, ignore_addresses=[(request.game_role)]).notify_game_log(level.game, log)
+    Notifier(server, ignore_addresses=[(request.game_role, token)]).notify_log_data(level.game, log)
     server.save_game(level.game)
     return responses.DataTimeStamp(data=log.time_sent, request_id=request.request_id)
 
