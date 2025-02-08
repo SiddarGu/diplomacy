@@ -1124,7 +1124,7 @@ def on_send_log_data(server, request, connection_handler):
     if not level.game.is_game_active:
         raise exceptions.GameNotPlayingException()
     log.time_sent = level.game.add_log(log)
-    #Notifier(server, ignore_addresses=[(request.game_role, token)]).notify_game_message(level.game, message)
+    Notifier(server, ignore_addresses=[(request.game_role, token)]).notify_game_log(level.game, message)
     server.save_game(level.game)
     return responses.DataTimeStamp(data=log.time_sent, request_id=request.request_id)
 
@@ -1258,6 +1258,8 @@ def on_synchronize(server, request, connection_handler):
     elif not level.game.power_has_token(request.game_role, request.token):
         raise exceptions.GamePlayerException()
     messages = level.game.get_messages(request.game_role, timestamp + 1)
+    logs = level.game.get_logs()
+
     if level.is_power():
         # Don't notify a power about messages she sent herself.
         messages = {message.time_sent: message for message in messages.values()
@@ -1274,6 +1276,8 @@ def on_synchronize(server, request, connection_handler):
                      for phase_data in phase_data_list]
     if current_phase_data:
         data_to_send.append(SynchronizedData(current_phase_data.state['timestamp'], 2, 'phase', current_phase_data))
+
+    data_to_send += [SynchronizedData(log.time_sent, 3, 'log', log) for log in logs.values()]
     data_to_send.sort(key=lambda x: (x.timestamp, x.order))
 
     # Send sync data.
@@ -1288,6 +1292,9 @@ def on_synchronize(server, request, connection_handler):
         if data.type == 'message':
             notifier.notify_game_addresses(
                 level.game.game_id, addresses, notifications.GameMessageReceived, message=data.data)
+        elif data.type == 'log':
+            notifier.notify_game_addresses(
+                level.game.game_id, addresses, notifications.LogDataReceived, log=data.data)
         else:
             if data.type not in ('state_history', 'phase'):
                 raise AssertionError('Unknown synchronized data.')
