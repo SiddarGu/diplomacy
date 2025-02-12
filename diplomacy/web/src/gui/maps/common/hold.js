@@ -15,7 +15,7 @@
 //  with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ==============================================================================
 import React from "react";
-import {centerSymbolAroundUnit} from "./common";
+import { centerSymbolAroundUnit } from "./common";
 import PropTypes from "prop-types";
 
 export class Hold extends React.Component {
@@ -23,8 +23,14 @@ export class Hold extends React.Component {
         const Coordinates = this.props.coordinates;
         const Colors = this.props.colors;
         const SymbolSizes = this.props.symbolSizes;
-        const symbol = 'HoldUnit';
-        const [loc_x, loc_y] = centerSymbolAroundUnit(Coordinates, SymbolSizes, this.props.loc, false, symbol);
+        const symbol = "HoldUnit";
+        const [loc_x, loc_y] = centerSymbolAroundUnit(
+            Coordinates,
+            SymbolSizes,
+            this.props.loc,
+            false,
+            symbol
+        );
         return (
             <g stroke={Colors[this.props.powerName]}>
                 <use
@@ -32,7 +38,8 @@ export class Hold extends React.Component {
                     y={loc_y}
                     width={SymbolSizes[symbol].width}
                     height={SymbolSizes[symbol].height}
-                    href={`#${symbol}`}/>
+                    href={`#${symbol}`}
+                />
             </g>
         );
     }
@@ -43,5 +50,5 @@ Hold.propTypes = {
     powerName: PropTypes.string.isRequired,
     coordinates: PropTypes.object.isRequired,
     symbolSizes: PropTypes.object.isRequired,
-    colors: PropTypes.object.isRequired
+    colors: PropTypes.object.isRequired,
 };

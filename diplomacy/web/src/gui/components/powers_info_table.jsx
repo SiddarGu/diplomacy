@@ -105,16 +105,7 @@ export class PowersInfoTable extends React.Component {
         this.props.onChangeDeceiving(country, checked);
     };
 
-    getBodyRow(
-        header,
-        row,
-        rowIndex,
-        wrapper,
-        countries,
-        stances,
-        isBot,
-        player
-    ) {
+    getBodyRow(header, row, rowIndex, wrapper, countries, stances, isBot, player) {
         const wrapped = wrapper(row);
 
         return (
@@ -126,14 +117,18 @@ export class PowersInfoTable extends React.Component {
                 ))}
 
                 {player !== countries[rowIndex] && !row.isEliminated() ? (
-                    <td style={{display: 'flex', flexDirection:'row'}}>
+                    <td style={{ display: "flex", flexDirection: "row" }}>
                         <Button
                             pickEvent={true}
                             title={"No change"}
                             onClick={() => {
-                                this.handleStance(countries[rowIndex], stances[countries[rowIndex]] ? stances[countries[rowIndex]] : 3);
+                                this.handleStance(
+                                    countries[rowIndex],
+                                    stances[countries[rowIndex]] ? stances[countries[rowIndex]] : 3
+                                );
                             }}
-                        ></Button>&nbsp;
+                        ></Button>
+                        &nbsp;
                         <Slider
                             country={countries[rowIndex]}
                             onChangeStance={this.handleStance}
@@ -145,9 +140,7 @@ export class PowersInfoTable extends React.Component {
                                 4: "Slightly friendly",
                                 5: "Very friendly",
                             }}
-                            clicked={
-                                this.props.stanceUpdated[countries[rowIndex]]
-                            }
+                            clicked={this.props.stanceUpdated[countries[rowIndex]]}
                         />
                     </td>
                 ) : null}
@@ -156,14 +149,9 @@ export class PowersInfoTable extends React.Component {
                     <td className={"align-middle"}>
                         <input
                             type="checkbox"
-                            defaultChecked={
-                                isBot[countries[rowIndex]] === true
-                            }
+                            defaultChecked={isBot[countries[rowIndex]] === true}
                             onClick={(e) => {
-                                this.handleIsBot(
-                                    countries[rowIndex],
-                                    e.target.checked
-                                );
+                                this.handleIsBot(countries[rowIndex], e.target.checked);
                             }}
                         ></input>
                     </td>

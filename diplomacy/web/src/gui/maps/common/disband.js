@@ -15,7 +15,7 @@
 //  with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ==============================================================================
 import React from "react";
-import {centerSymbolAroundUnit} from "./common";
+import { centerSymbolAroundUnit } from "./common";
 import PropTypes from "prop-types";
 
 export class Disband extends React.Component {
@@ -24,15 +24,22 @@ export class Disband extends React.Component {
         const SymbolSizes = this.props.symbolSizes;
         const loc = this.props.loc;
         const phaseType = this.props.phaseType;
-        const symbol = 'RemoveUnit';
-        const [loc_x, loc_y] = centerSymbolAroundUnit(Coordinates, SymbolSizes, loc, phaseType === 'R', symbol);
+        const symbol = "RemoveUnit";
+        const [loc_x, loc_y] = centerSymbolAroundUnit(
+            Coordinates,
+            SymbolSizes,
+            loc,
+            phaseType === "R",
+            symbol
+        );
         return (
             <g>
-                <use x={loc_x}
-                     y={loc_y}
-                     height={SymbolSizes[symbol].height}
-                     width={SymbolSizes[symbol].width}
-                     href={`#${symbol}`}
+                <use
+                    x={loc_x}
+                    y={loc_y}
+                    height={SymbolSizes[symbol].height}
+                    width={SymbolSizes[symbol].width}
+                    href={`#${symbol}`}
                 />
             </g>
         );
@@ -43,5 +50,5 @@ Disband.propTypes = {
     loc: PropTypes.string.isRequired,
     phaseType: PropTypes.string.isRequired,
     coordinates: PropTypes.object.isRequired,
-    symbolSizes: PropTypes.object.isRequired
+    symbolSizes: PropTypes.object.isRequired,
 };

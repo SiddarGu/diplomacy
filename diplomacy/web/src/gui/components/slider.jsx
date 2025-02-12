@@ -18,15 +18,15 @@ export class Slider extends React.Component {
                     min={"1"}
                     max={"5"}
                     step={"1"}
-                    onChange={(event) => this.props.onChangeStance(this.country, event.target.value)}
+                    onChange={(event) =>
+                        this.props.onChangeStance(this.country, event.target.value)
+                    }
                 />
 
                 <p>
                     <span
                         id={"stanceValue"}
-                        className={
-                            this.props.clicked ? null : "unclickedSlider"
-                        }
+                        className={this.props.clicked ? null : "unclickedSlider"}
                     >
                         {this.props.dict[this.props.stance > 0 ? this.props.stance : 3]}
                     </span>

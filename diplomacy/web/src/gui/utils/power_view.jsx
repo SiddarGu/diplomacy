@@ -72,18 +72,17 @@ function getWaitFlag(power) {
                 <em>N/A</em>
             </span>
         );
-    return (
-        <span className={power.wait ? "wait" : "no-wait"}>
-            {power.wait ? "no" : "yes"}
-        </span>
-    );
+    return <span className={power.wait ? "wait" : "no-wait"}>{power.wait ? "no" : "yes"}</span>;
 }
 
 function getCommStatusFlag(power) {
     if (power.isEliminated())
-        return <span className="dummy"><em>N/A</em></span>;
-    return <span className={power.comm_status === 'ready'}>{power.comm_status === 'ready'}</span>;
-
+        return (
+            <span className="dummy">
+                <em>N/A</em>
+            </span>
+        );
+    return <span className={power.comm_status === "ready"}>{power.comm_status === "ready"}</span>;
 }
 
 const GETTERS = {

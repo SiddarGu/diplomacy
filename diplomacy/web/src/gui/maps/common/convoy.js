@@ -15,8 +15,8 @@
 //  with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ==============================================================================
 import React from "react";
-import {ARMY, centerSymbolAroundUnit, coloredStrokeWidth, getUnitCenter} from "./common";
-import {EquilateralTriangle} from "./equilateralTriangle";
+import { ARMY, centerSymbolAroundUnit, coloredStrokeWidth, getUnitCenter } from "./common";
+import { EquilateralTriangle } from "./equilateralTriangle";
 import PropTypes from "prop-types";
 
 export class Convoy extends React.Component {
@@ -28,8 +28,14 @@ export class Convoy extends React.Component {
         const src_loc = this.props.srcLoc;
         const dest_loc = this.props.dstLoc;
 
-        const symbol = 'ConvoyTriangle';
-        let [symbol_loc_x, symbol_loc_y] = centerSymbolAroundUnit(Coordinates, SymbolSizes, src_loc, false, symbol);
+        const symbol = "ConvoyTriangle";
+        let [symbol_loc_x, symbol_loc_y] = centerSymbolAroundUnit(
+            Coordinates,
+            SymbolSizes,
+            src_loc,
+            false,
+            symbol
+        );
         const symbol_height = parseFloat(SymbolSizes[symbol].height);
         const symbol_width = parseFloat(SymbolSizes[symbol].width);
         const triangle = new EquilateralTriangle(
@@ -40,7 +46,7 @@ export class Convoy extends React.Component {
             parseFloat(symbol_loc_x),
             parseFloat(symbol_loc_y) + symbol_height
         );
-        symbol_loc_y = '' + (parseFloat(symbol_loc_y) - symbol_height / 6);
+        symbol_loc_y = "" + (parseFloat(symbol_loc_y) - symbol_height / 6);
         const [loc_x, loc_y] = getUnitCenter(Coordinates, SymbolSizes, loc, false);
         const [src_loc_x, src_loc_y] = getUnitCenter(Coordinates, SymbolSizes, src_loc, false);
         let [dest_loc_x, dest_loc_y] = getUnitCenter(Coordinates, SymbolSizes, dest_loc, false);
@@ -50,41 +56,66 @@ export class Convoy extends React.Component {
 
         const dest_delta_x = dest_loc_x - src_loc_x;
         const dest_delta_y = dest_loc_y - src_loc_y;
-        const dest_vector_length = Math.sqrt(dest_delta_x * dest_delta_x + dest_delta_y * dest_delta_y);
-        const delta_dec = parseFloat(SymbolSizes[ARMY].width) / 2 + 2 * coloredStrokeWidth(SymbolSizes);
-        dest_loc_x = '' + Math.round((parseFloat(src_loc_x) + (dest_vector_length - delta_dec) / dest_vector_length * dest_delta_x) * 100.) / 100.;
-        dest_loc_y = '' + Math.round((parseFloat(src_loc_y) + (dest_vector_length - delta_dec) / dest_vector_length * dest_delta_y) * 100.) / 100.;
+        const dest_vector_length = Math.sqrt(
+            dest_delta_x * dest_delta_x + dest_delta_y * dest_delta_y
+        );
+        const delta_dec =
+            parseFloat(SymbolSizes[ARMY].width) / 2 + 2 * coloredStrokeWidth(SymbolSizes);
+        dest_loc_x =
+            "" +
+            Math.round(
+                (parseFloat(src_loc_x) +
+                    ((dest_vector_length - delta_dec) / dest_vector_length) * dest_delta_x) *
+                    100
+            ) /
+                100;
+        dest_loc_y =
+            "" +
+            Math.round(
+                (parseFloat(src_loc_y) +
+                    ((dest_vector_length - delta_dec) / dest_vector_length) * dest_delta_y) *
+                    100
+            ) /
+                100;
 
         return (
             <g stroke={Colors[this.props.powerName]}>
-                <line x1={loc_x}
-                      y1={loc_y}
-                      x2={src_loc_x_1}
-                      y2={src_loc_y_1}
-                      className={'shadowdash'}/>
-                <line x1={src_loc_x_2}
-                      y1={src_loc_y_2}
-                      x2={dest_loc_x}
-                      y2={dest_loc_y}
-                      className={'shadowdash'}/>
-                <line x1={loc_x}
-                      y1={loc_y}
-                      x2={src_loc_x_1}
-                      y2={src_loc_y_1}
-                      className={'convoyorder'}
-                      stroke={Colors[this.props.powerName]}/>
-                <line x1={src_loc_x_2}
-                      y1={src_loc_y_2}
-                      x2={dest_loc_x}
-                      y2={dest_loc_y}
-                      className={'convoyorder'}
-                      markerEnd={'url(#arrow)'}
-                      stroke={Colors[this.props.powerName]}/>
+                <line
+                    x1={loc_x}
+                    y1={loc_y}
+                    x2={src_loc_x_1}
+                    y2={src_loc_y_1}
+                    className={"shadowdash"}
+                />
+                <line
+                    x1={src_loc_x_2}
+                    y1={src_loc_y_2}
+                    x2={dest_loc_x}
+                    y2={dest_loc_y}
+                    className={"shadowdash"}
+                />
+                <line
+                    x1={loc_x}
+                    y1={loc_y}
+                    x2={src_loc_x_1}
+                    y2={src_loc_y_1}
+                    className={"convoyorder"}
+                    stroke={Colors[this.props.powerName]}
+                />
+                <line
+                    x1={src_loc_x_2}
+                    y1={src_loc_y_2}
+                    x2={dest_loc_x}
+                    y2={dest_loc_y}
+                    className={"convoyorder"}
+                    markerEnd={"url(#arrow)"}
+                    stroke={Colors[this.props.powerName]}
+                />
                 <use
                     x={symbol_loc_x}
                     y={symbol_loc_y}
-                    width={'' + symbol_width}
-                    height={'' + symbol_height}
+                    width={"" + symbol_width}
+                    height={"" + symbol_height}
                     href={`#${symbol}`}
                 />
             </g>
@@ -99,5 +130,5 @@ Convoy.propTypes = {
     powerName: PropTypes.string.isRequired,
     coordinates: PropTypes.object.isRequired,
     symbolSizes: PropTypes.object.isRequired,
-    colors: PropTypes.object.isRequired
+    colors: PropTypes.object.isRequired,
 };

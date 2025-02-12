@@ -62,16 +62,7 @@ export class AdminPowersInfoTable extends React.Component {
         );
     }
 
-    getBodyRow(
-        header,
-        row,
-        rowIndex,
-        wrapper,
-        countries,
-        stances,
-        isBot,
-        player
-    ) {
+    getBodyRow(header, row, rowIndex, wrapper, countries, stances, isBot, player) {
         const wrapped = wrapper(row);
 
         return (
