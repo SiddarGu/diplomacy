@@ -7,4 +7,3 @@ setuptools
 tornado>=5.0
 tqdm
 ujson
-
