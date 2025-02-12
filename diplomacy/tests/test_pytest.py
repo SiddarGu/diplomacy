@@ -16,8 +16,9 @@
 # ==============================================================================
 """ Pytest checker """
 
+
 # Check that tests are running
 # Avoids pytests not having tests to run
 def test_pytest():
-    """ Should always pass """
+    """Should always pass"""
     assert True

@@ -18,24 +18,21 @@
 
 from diplomacy.utils.jsonable import Jsonable
 
+
 class SchedulerEvent(Jsonable):
-    """ Scheduler event class.
+    """Scheduler event class.
 
-        Properties:
+    Properties:
 
-        - **time_unit**: unit time (in seconds) used by scheduler (time between 2 tasks checkings).
-          Currently 1 second in server scheduler.
-        - **time_added**: scheduler time (nb. time units) when data was added to scheduler.
-        - **delay**: scheduler time (nb. time units) to wait before processing time.
-        - **current_time**: current scheduler time (nb. time units).
+    - **time_unit**: unit time (in seconds) used by scheduler (time between 2 tasks checkings).
+      Currently 1 second in server scheduler.
+    - **time_added**: scheduler time (nb. time units) when data was added to scheduler.
+    - **delay**: scheduler time (nb. time units) to wait before processing time.
+    - **current_time**: current scheduler time (nb. time units).
     """
-    __slots__ = ['time_unit', 'time_added', 'delay', 'current_time']
-    model = {
-        'time_unit': int,
-        'time_added': int,
-        'delay': int,
-        'current_time': int
-    }
+
+    __slots__ = ["time_unit", "time_added", "delay", "current_time"]
+    model = {"time_unit": int, "time_added": int, "delay": int, "current_time": int}
 
     def __init__(self, **kwargs):
         self.time_unit = 0
