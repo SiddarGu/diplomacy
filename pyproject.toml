@@ -24,7 +24,7 @@ classifiers = [
   "Topic :: Games/Entertainment :: Board Games",
 ]
 requires-python = ">=3.7"
-license = { text = "MIT" }
+license = { text = "AGPL-3.0-or-later" }
 dependencies = [
   "bcrypt",
   "coloredlogs",
@@ -49,10 +49,10 @@ dev = [
 ]
 
 [project.urls]
-documentation = "https://diplomacy.readthedocs.io/"
-homepage = "https://github.com/diplomacy/diplomacy/"
+documentation = "https://diplomacy.readthedocs.io"
+homepage = "https://github.com/diplomacy/diplomacy"
 issues = "https://github.com/diplomacy/diplomacy/issues"
-source = "https://github.com/diplomacy/diplomacy/"
+source = "https://github.com/diplomacy/diplomacy"
 
 [tool.setuptools.dynamic]
 version = {attr = "diplomacy.version.PACKAGE_VERSION"}
