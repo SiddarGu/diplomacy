@@ -869,6 +869,7 @@ export class ContentGame extends React.Component {
                 recipient: recipient,
                 message: body,
                 truth: deception,
+                daide: daide,
             });
             networkGame
                 .sendGameMessage({ message: message })
@@ -1976,6 +1977,7 @@ export class ContentGame extends React.Component {
                                         currentTabId,
                                         "yes",
                                         null,
+                                        "YES (" + msg.daide + ")"
                                     );
                                     this.handleRecipientAnnotation(
                                         msg.time_sent,
@@ -2002,6 +2004,7 @@ export class ContentGame extends React.Component {
                                         currentTabId,
                                         "no",
                                         null,
+                                        "REJ (" + msg.daide + ")"
                                     );
                                     this.handleRecipientAnnotation(
                                         msg.time_sent,
